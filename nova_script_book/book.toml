@@ -1,0 +1,8 @@
+[book]
+authors = []
+language = "en"
+src = "src"
+title = "Nova Script"
+
+[preprocessor.callouts]
+[preprocessor.codename]
