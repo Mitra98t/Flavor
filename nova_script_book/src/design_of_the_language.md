@@ -43,6 +43,11 @@ else {
 fn is_even (a: int) -> int {
     return a % 2 == 0;
 }
+
+let lambda: int -> void = <x:int> {
+    print x;
+};
+
 ```
 
 Just by looking at this code, it is apparent that there are a lot of considerations to do.
@@ -78,3 +83,46 @@ else {
     "smaller"
 };
 ```
+
+> [!QUESTION]
+> I admit that I do not completely understand the consequences of the
+> _statement_ vs _expression_ thing
+
+To takle the quetion of _parenthesis or no parenthesis_, we have to recognize
+that we can use the parenthesis to convey specific semantical information.
+For instance, we might associate the absence of the parenthesis with the
+_macros_ (assuming we want to include them).
+
+## Function definition and typing
+
+To imagine the function definition thoroughly, let's write an hypotetical
+implementation for the _fibonacci sequence_.
+
+```typescript:fibonacci.nova
+fn fibonacci (x:int) -> int {
+    if x == 1 || x == 2 {
+        return 1;
+    }
+    else {
+        return fibonacci(x-1) + fibonacci(x-2);
+    };
+}
+
+let fibonacci_lambda = <x:int> -> int { // fibonacci_lambda: <int> -> int
+    if x == 1 || x == 2 {
+        return 1;
+    }
+    else {
+        return fibonacci(x-1) + fibonacci(x-2);
+    };
+}
+
+```
+
+Writing the code for the _Fibonacci Sequence_ function, I had to come up with
+the syntax for the typing of functions and for the definition of lambdas.  
+Looking at the code, I quite enjoy the use of the less then and greater then to
+enclose the parameters of the lambdas.
+Furthermore, that syntax can be reused for the type definition of functions.
+A lambda function's type, using this syntax, can be defined as `<param_type> ->
+return_type`.

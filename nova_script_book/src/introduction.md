@@ -105,6 +105,10 @@ I will insert call-outs in the book, each one means something.
 > [!NOTE]
 > Here I will inlcude notes, mainly my reasonings and thoughts
 
+> [!QUESTION]
+> Here I will note staff to be studied more or that i do not fully understand
+> yet
+
 > Add more of those here...
 
 **Syntax highlighting!**
