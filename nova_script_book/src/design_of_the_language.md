@@ -1,4 +1,4 @@
-# NovaScript Design
+# NovaScript Imagining the First Design
 
 The aim of this chapter is to produce an overview of the design of NovaScript.
 We will **not** dive into the implementation details or choices yet.
@@ -17,6 +17,14 @@ Rather, we will imagine what we want NovaScript to look like.
 > feasability and the reasons behind it.
 > If these discussions produce positive expectations, then we will try and
 > implement the thing.
+
+## First Syntax Creation
+
+I will leave the following text and code unchanged.
+For context, I wrote this stuff without much thought.
+My intention in keeping it as is, basically without review, is to show the first
+ever ideas that went into the languge aesthetics.
+The conseguences of this first design are discussed in the next section.
 
 In the following piece of code we will explore the syntax for NovaScript.
 
@@ -126,3 +134,15 @@ enclose the parameters of the lambdas.
 Furthermore, that syntax can be reused for the type definition of functions.
 A lambda function's type, using this syntax, can be defined as `<param_type> ->
 return_type`.
+
+## Design ideas wrap up
+
+This step was intentionally messy, the idea was just to explore ideas.
+As of now, the only thing that I know i want to incorporate are:
+
+- some basic typing notation
+- variable declaration
+- functions and lambdas notation
+
+Hopefully that is enough to start having fun with the development.  
+In the next chapter we will explore the first step of the implementation.
