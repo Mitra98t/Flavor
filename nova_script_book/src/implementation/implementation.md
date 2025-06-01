@@ -82,3 +82,7 @@ For example, if the character is the symbol `;`, we produce the token `SEMICOLON
 If the character is the letter `f`, it might be part of an identifier.  
 In this case, the lexer continues scanning the following characters (looking for alphanumeric ones) and,  
 once finished, produces the token `IDENTIFIER`.
+
+## The Parser
+
+Todo...
