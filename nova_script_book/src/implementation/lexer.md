@@ -1,8 +1,8 @@
 # Lexer
 
 Going back to the introduction to this chapter
-([Implementation](./implementation.md)) we reviewed the inteded behavior of the
-lexer, not its implementation, neither generic nor specific to NovaScript.  
+([Implementation](./implementation.md)), we reviewed the inteded behavior of the
+lexer, not its specific implementation for NovaScript.  
 Here, in these sections, we will analyze the code behind NovaScript and the
 reasonings that generated it.
 
@@ -22,16 +22,16 @@ Using the code as we imagined it, we can define this allowed syntax.
 For instance, notice the usage of the keyword `let`, the semicolon `;` and the
 colon `:`.
 All these elements will correspond to tokens in the lexer.
-We can repeat the process to provide a complete list of tokens in an `enum` as
-well as define the struct `Token` to represent the tuple for the token (as described in [Implementation](./implementation.md).
+We can repeat the process to provide a complete list of tokens in an `enum`.
+We will also define the struct `Token` to represent the tuple for the token (as described in [Implementation](./implementation.md)).
 
 ## Development
 
-First things first, we decided to use rust for the project; we will then follow
+First things first, we decided to use Rust for the project; we will then follow
 a structured approach to development: first comes the definition of the types,
 than their behaviors, and lastly we use them in the main code.
 
-The types definition for the lexer are straight forward; we need the allowed tokens and
+The types definition for the lexer are straightforward; we need the allowed tokens and
 a struct to represent the concept of a token.
 
 > The code necessary to do so is found in [types](https://github.com/Mitra98t/NovaScript/blob/main/src/types.rs).
