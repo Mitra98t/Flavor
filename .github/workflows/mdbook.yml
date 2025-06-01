@@ -8,7 +8,6 @@ on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-  push:
     paths:
       - ./nova_script_book/**
   pull_request:
