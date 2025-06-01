@@ -16,7 +16,7 @@ foo
 let foo = 3;"#;
     let mut lexer = Lexer::new(code);
     lexer.lexe();
-    println!("CODE\n\n{}\n----", code);
+    println!("SOURCE CODE\n\n{}\n----", code);
 
     lexer.tokens.iter().for_each(|tok| {
         println!("{:?}", tok);
