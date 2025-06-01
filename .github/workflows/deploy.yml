@@ -9,7 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # To push a branch
-      pull-requests: write # To create a PR from that branch
+      pages: write # To push to a GitHub Pages site
+      id-token: write # To update the deployment status
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,17 +22,18 @@ jobs:
           mkdir mdbook
           curl -sSL $url | tar -xz --directory=./mdbook
           echo `pwd`/mdbook >> $GITHUB_PATH
-      - name: Deploy GitHub Pages
+      - name: Build Book
         run: |
-          cd nova_script_book
+          # This assumes your book is in the root of your repository.
+          # Just add a `cd` here if you need to change to another directory.
           mdbook build
-          git worktree add gh-pages
-          git config user.name "Deploy from CI"
-          git config user.email ""
-          cd gh-pages
-          git update-ref -d refs/heads/gh-pages
-          rm -rf *
-          mv ../book/* .
-          git add .
-          git commit -m "Deploy $GITHUB_SHA to gh-pages"
-          git push --force --set-upstream origin gh-pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: "book"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
