@@ -6,6 +6,13 @@ lexer, not its implementation, neither generic nor specific to NovaScript.
 Here, in these sections, we will analyze the code behind NovaScript and the
 reasonings that generated it.
 
+In this chapter, we will create a lexer that uses regular expression (regex) rules.  
+The idea behind this lexer is to define a set of regex patterns that represent the tokens we want to identify.  
+When a regex matches a part of the code, we generate the corresponding token and add it to the token list.  
+For example, we can define the regex `[0-9]+` to find numbers in the source code.  
+This regex is then tested against the source code, and if it matches a string like  
+`146`, the token `(NUMBER, "146")` is generated.
+
 ## Setup
 
 The creation of a lexer starts with the definition of the allowed syntax.

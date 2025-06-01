@@ -72,3 +72,13 @@ let tokens = Lexer.lexe(code);
 (NUMBER, "5"),
 */
 ```
+
+How the lexer does this processing to the source code is _not that relevant_.
+There are multiple ways in which we can acomplish this result.  
+The more common is the usage of **single character scanning system**.
+The logic is that the lexer scans the source code one character at the time and
+checks it to see if it correspond to a token or to the start of a token.
+For example, if the character is the symbol `;`, we produce the token `SEMICOLON`.  
+If the character is the letter `f`, it might be part of an identifier.  
+In this case, the lexer continues scanning the following characters (looking for alphanumeric ones) and,  
+once finished, produces the token `IDENTIFIER`.
