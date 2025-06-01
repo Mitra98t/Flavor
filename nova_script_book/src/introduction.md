@@ -66,6 +66,41 @@ The target audience I have in mind is someone who has some programming
 exeprience, but is not necessarily an expert and, more importantly, who is
 quite new to the topic of programming languages.
 
+## How to read this book
+
+The book is structured as a sort of _diary_ journaling the development of NovaScript.
+For that reason the chapter will not follow a logical structure, but instead
+will follow the production timeline.
+This means that we can go back to describing the design of the language at any moment
+during development to accurately follow my steps.
+The implementation on the other hand will be structured based on the code
+itself; the chapter related to the **[Lexer](./implementation/lexer.md)**, for instance, will describe the lexer's
+implementation mimiking the _wiki_ of a project.  
+To reiterate, the [implementation](./implementation/implementation.md) section will be structured and organized
+logically, while the rest of the book will follow the development timeline.
+
+If you are following the production of this book, then you might find the
+content of this paragraph rather unsatisfying.
+I will expand on this paragraph when I need to include a new notation in the
+book.
+
+**Look out for the call-outs!**
+I will insert call-outs in the book, each one means something.
+
+> [!NOTE]
+> Here I will inlcude notes, mainly my reasonings and thoughts
+
+> [!QUESTION]
+> Here I will note stuff to be studied more or that i do not fully understand
+> yet
+
+> Add more of those here...
+
+**Syntax highlighting!**
+To highlight the syntax of NovaScript throughout the examples and the snippets
+in this book, we will use other languages' highlighting (at least until i figure
+out how to create custom highlighting for NovaScript) so it might be imperfect.
+
 ## Some design choices
 
 The first, and most predominant, choice is the language we will be using for
@@ -91,30 +126,6 @@ I want to understand the process of language design and implementation; the goal
 is not to create a production-ready, feature-rich and performant language; the
 goal is, instead, to face the challenges someone before me would have faced, and
 to come up with solutions that I am reasonably happy with.
-
-## How to read this book
-
-If you are following the production of this book, then you might find the
-content of this paragraph rather unsatisfying.
-I will expand on this paragraph when I need to include a new notation in the
-book.
-
-**Look out for the call-outs!**
-I will insert call-outs in the book, each one means something.
-
-> [!NOTE]
-> Here I will inlcude notes, mainly my reasonings and thoughts
-
-> [!QUESTION]
-> Here I will note stuff to be studied more or that i do not fully understand
-> yet
-
-> Add more of those here...
-
-**Syntax highlighting!**
-To highlight the syntax of NovaScript throughout the examples and the snippets
-in this book, we will use other languages' highlighting (at least until i figure
-out how to create custom highlighting for NovaScript) so it might be imperfect.
 
 ## NovaScript
 

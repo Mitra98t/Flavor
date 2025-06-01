@@ -56,6 +56,8 @@ let lambda: int -> void = <x:int> {
     print x;
 };
 
+alias function fn;
+
 ```
 
 Just by looking at this code, it is apparent that there are a lot of considerations to do.
@@ -146,3 +148,9 @@ As of now, the only thing that I know i want to incorporate are:
 
 Hopefully that is enough to start having fun with the development.  
 In the next chapter we will explore the first step of the implementation.
+
+An interesting idea that came out while showing the syntax to a friend is the
+possibility to add aliases as `alias function fn`, possibly even adding multiple
+aliases at one like `alias [function, func] fn`.
+It will be interesging to immagine the most appropriate implementation for such
+frature, but it will have to wait for a while.
