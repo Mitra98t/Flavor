@@ -10,10 +10,10 @@ on:
     branches: ["main"]
   push:
     paths:
-      - 'nova_script_book/**'
+      - './nova_script_book/**'
   pull_request:
     paths:
-      - 'nova_script_book/**'
+      - './nova_script_book/**'
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
