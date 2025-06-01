@@ -1,7 +1,5 @@
 # Introduction
 
-testing testing
-
 In this book, we will follow my attempt at buinding a simple programming
 language.
 It is not my first time attempting such a project, but it is the first time
