@@ -6,10 +6,12 @@ pub struct Token {
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum TokenName {
+    // Keywords
     Let,
     Fn,
     Alias,
 
+    // Symbols
     Colon,
     Semicolon,
     Assign,
@@ -28,6 +30,7 @@ pub enum TokenName {
     Div,
     Percent,
 
+    // Parenthesis
     LPar,
     RPar,
     LSqu,
@@ -35,9 +38,11 @@ pub enum TokenName {
     LBra,
     Rbra,
 
+    // Complex Elements
     Number,
     Identifier,
 
+    // Utils
     Unknown,
     Eof,
 }

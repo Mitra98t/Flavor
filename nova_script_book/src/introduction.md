@@ -94,6 +94,10 @@ I will insert call-outs in the book, each one means something.
 > Here I will note stuff to be studied more or that i do not fully understand
 > yet
 
+> [!IMPORTANT]
+> Here I will describe important sections to look for (usually highlighting
+> possible mistakes)
+
 > Add more of those here...
 
 **Syntax highlighting!**

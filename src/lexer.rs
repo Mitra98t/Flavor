@@ -100,8 +100,7 @@ impl Lexer {
 
     fn match_start(&self, pattern: &str) -> Option<&str> {
         let re = Regex::new(pattern).unwrap();
-        let sub_source = &self.source[self.pos..];
-        if let Some(mat) = re.find(sub_source) {
+        if let Some(mat) = re.find(self.remaining_source()) {
             if mat.start() == 0 {
                 Some(mat.as_str())
             } else {
@@ -113,21 +112,21 @@ impl Lexer {
     }
 
     fn skip_whitespace(&mut self) {
-        let re = Regex::new(r"^\s$").unwrap();
-        while re.is_match(&self.char().to_string()) {
-            self.consume_char();
+        let re = Regex::new(r"^\s+").unwrap();
+        while let Some(m) = re.find(self.remaining_source()) {
+            if m.start() == 0 {
+                self.consume_n_char(m.end());
+            } else {
+                break;
+            }
         }
     }
 
-    fn char(&self) -> char {
-        self.source.chars().nth(self.pos).unwrap_or('\0')
+    fn remaining_source(&self) -> &str {
+        &self.source[self.pos..]
     }
 
     fn consume_n_char(&mut self, n: usize) {
         self.pos += n;
-    }
-
-    fn consume_char(&mut self) {
-        self.pos += 1;
     }
 }
