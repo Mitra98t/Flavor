@@ -1,6 +1,6 @@
 # Introduction
 
-In this book, we will follow my attempt at buinding a simple programming
+In this book, we will follow my attempt at building a simple programming
 language.
 It is not my first time attempting such a project, but it is the first time
 doing it in a structured way while sharing the process and the code.
@@ -14,9 +14,9 @@ me.
 To specify some things before we start:
 
 - This project is not meant to be a learning resource, but rather a learning
-  platform; the idea of sharing this exeprience is guided by the hope that it
-  will help others learn from my mistakes and successes while learning
-  from suggestions and critics along the way myself.
+  platform; the idea of sharing this experience is guided by the hope that it
+  will help others learn from my mistakes and successes.
+  I also hope to learn from suggestions and critics along the way myself.
 - This book will primarily show my reasoning process and the decisions I make
   about language design and implementation.
   I will try to keep the explanations linear and clear (don't make me promise).
@@ -63,7 +63,7 @@ resource even if you are a seasoned developer, but I hope that you will find
 something useful in it.
 
 The target audience I have in mind is someone who has some programming
-exeprience, but is not necessarily an expert and, more importantly, who is
+experience, but is not necessarily an expert and, more importantly, who is
 quite new to the topic of programming languages.
 
 ## How to read this book
@@ -75,7 +75,7 @@ This means that we can go back to describing the design of the language at any m
 during development to accurately follow my steps.
 The implementation on the other hand will be structured based on the code
 itself; the chapter related to the **[Lexer](./implementation/lexer.md)**, for instance, will describe the lexer's
-implementation mimiking the _wiki_ of a project.  
+implementation mimicking the _wiki_ of a project.  
 To reiterate, the [implementation](./implementation/implementation.md) section will be structured and organized
 logically, while the rest of the book will follow the development timeline.
 
@@ -88,10 +88,10 @@ book.
 I will insert call-outs in the book, each one means something.
 
 > [!NOTE]
-> Here I will inlcude notes, mainly my reasonings and thoughts
+> Here I will include notes, mainly my reasonings and thoughts
 
 > [!QUESTION]
-> Here I will note stuff to be studied more or that i do not fully understand
+> Here I will note stuff to be studied more or that I do not fully understand
 > yet
 
 > [!IMPORTANT]
@@ -102,7 +102,7 @@ I will insert call-outs in the book, each one means something.
 
 **Syntax highlighting!**
 To highlight the syntax of NovaScript throughout the examples and the snippets
-in this book, we will use other languages' highlighting (at least until i figure
+in this book, we will use other languages' highlighting (at least until I figure
 out how to create custom highlighting for NovaScript) so it might be imperfect.
 
 ## Some design choices
@@ -114,8 +114,8 @@ First, I am quite enjoying the language, I find its consistency and safety featu
 very appealing; the strong typing system promotes good design at an early stage.
 There could be a counter argument to this, mainly saying that Rust puts so much
 focus on types that, after spending a lot of time resolving errors arising from
-types inconsistencies, you will have forgotten what the program was supposed to
-do, but it surely runs without any errors.
+types inconsistencies, you will have forgotten what the program was supposed to do.
+But it surely runs without any errors.
 I do not think that this is a problem, and even so, there are multiple languages
 one could use for this project so feel free to experiment.
 Second, Rust offers the possibility to write low-level code that, in the remote
@@ -137,10 +137,10 @@ to come up with solutions that I am reasonably happy with.
 The name is not meant to represent anything; I just find it sci-fi enough so
 that is seems useful.
 
-NovaScript will be a interpreted lanugage (unless i manange to write a compiler)
+NovaScript will be an interpreted language (unless I manange to write a compiler)
 offering a strict typing system, type inference, function and lambdas, and --
 possibly -- classes and objects.
-I will admit that the features NovaScript will offer are to be decided and will  
+I will admit that the features NovaScript will offer are to be decided and will
 greatly depend on my implementation.
 The few listed prior are just what I _know_ that I want to tackle in this
 journey.
@@ -148,6 +148,6 @@ journey.
 The aesthetic of NovaScript will be designed with the concern of consistency
 in mind -- going back to [the decision to use
 Rust in Some design choices](./introduction.md#some-design-choices).
-I have tried a not-so-small collection of languages, and I have found a series of  
+I have tried a not-so-small collection of languages, and I have found a series of
 elements that I like and don't like in the syntaxes I have learned.
 NovaScript's syntax will be based on the intersection of those elements.

@@ -30,7 +30,7 @@ pub enum TokenName {
     Div,
     Percent,
 
-    // Parenthesis
+    // Parentheses
     LPar,
     RPar,
     LSqu,

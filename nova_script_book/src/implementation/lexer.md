@@ -46,7 +46,7 @@ pub enum TokenName {
     // Symbols
     Colon, Semicolon, // ...
 
-    // Parenthesis
+    // Parentheses
     LPar, RPar, // ...
 
     // Complex Elements
@@ -100,7 +100,7 @@ pub struct Lexer {
 
 We leave the `tokens` public to access them from outside the lexer itself.
 The `source` attribute is used to store the source code to process.
-Lastly the `pos` element represent the starting position of the source code;
+Lastly the `pos` element represents the starting position of the source code;
 this means that when a snippet is consumed by the lexer (see the next part to
 understand how) we will advance the position (`pos`) to indicate a new starting
 point for the lexer.
