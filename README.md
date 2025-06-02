@@ -24,7 +24,7 @@ appropriate feedback.
 
 ### Book Contributions
 
-The directory `./nova_script_book/` you will find [the book](https://mitra98t.github.io/NovaScript/introduction.html).
+In the directory `./nova_script_book/` you will find [the book](https://mitra98t.github.io/NovaScript/introduction.html).
 To **contribute** to the book you will need to have [mdbook](https://rust-lang.github.io/mdBook/).
 Mdbook is a website creator to build beautiful documentations website using
 markdown file.
