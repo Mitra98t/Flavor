@@ -59,6 +59,8 @@ impl Lexer {
             (r"<=", TokenName::Le),
             (r">", TokenName::Gt),
             (r"<", TokenName::Lt),
+            (r"\+\+", TokenName::PlusPlus),
+            (r"--", TokenName::MinusMinus),
             (r"\+", TokenName::Plus),
             (r"-", TokenName::Minus),
             (r"\*", TokenName::Times),
@@ -87,15 +89,6 @@ impl Lexer {
         self.consume_n_char(length_of_tok);
 
         tok
-    }
-
-    fn match_or(&self, patterns: &[&str]) -> Option<&str> {
-        for p in patterns {
-            if let Some(len) = self.match_start(p) {
-                return Some(len);
-            }
-        }
-        None
     }
 
     fn match_start(&self, pattern: &str) -> Option<&str> {
