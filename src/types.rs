@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct Token {
     pub tok_name: TokenName,
@@ -10,6 +12,13 @@ pub enum TokenName {
     Let,
     Fn,
     Alias,
+
+    // Types
+    Int,
+    Float,
+    Bool,
+    String,
+    Nothing,
 
     // Symbols
     Colon,
@@ -49,11 +58,27 @@ pub enum TokenName {
     Eof,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Type {
+    Int,
+    Bool,
+    Float,
+    String,
+    Unit,
+    Custom(String),
+    // Array(Box<Type>),
+    // Function {
+    //     param_types: Vec<Type>,
+    //     return_type: Box<Type>,
+    // },
+    // Unknown,
+}
+
 #[derive(Debug, Clone)]
 pub enum ASTNode {
     LetDeclaration {
         identifier: String,
-        var_type: Option<String>,
+        var_type: Option<Type>,
         expr: Box<ASTNode>,
     },
 
@@ -93,7 +118,7 @@ fn print_node(node: &ASTNode, indent: usize) {
             println!("{}LetDeclaration:", indent_str);
             println!("{}  Identifier: {}", indent_str, identifier);
             if let Some(t) = var_type {
-                println!("{}  Type: {}", indent_str, t);
+                println!("{}  Type: {:?}", indent_str, t);
             } else {
                 println!("{}  Type: None", indent_str);
             }

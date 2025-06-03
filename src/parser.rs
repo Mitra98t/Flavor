@@ -1,4 +1,4 @@
-use crate::types::{ASTNode, Token, TokenName};
+use crate::types::{ASTNode, Token, TokenName, Type};
 
 type ParseProduction = Result<ASTNode, String>;
 
@@ -74,7 +74,7 @@ impl Parser {
         let id_tok = self.expect_tok(TokenName::Identifier)?;
 
         // Optional Type definition
-        let var_type: Option<String> = if self.current_tok().tok_name == TokenName::Colon {
+        let var_type: Option<Type> = if self.current_tok().tok_name == TokenName::Colon {
             // The type is being defined (there is the colon `:`)
             self.consume_tok();
             Some(self.parse_type()?)
@@ -99,11 +99,6 @@ impl Parser {
         let expr = self.parse_expression()?;
         self.expect_tok(TokenName::Semicolon)?;
         Ok(ASTNode::ExpressionStatement(Box::new(expr)))
-    }
-
-    fn parse_type(&mut self) -> Result<String, String> {
-        let type_tok = self.expect_tok(TokenName::Identifier)?;
-        Ok(type_tok.lexeme)
     }
 
     fn parse_expression(&mut self) -> ParseProduction {
@@ -199,6 +194,33 @@ impl Parser {
                 Ok(expr)
             }
             _ => Err(format!("Unexpected token in expression: {:?}", tok)),
+        }
+    }
+
+    fn parse_type(&mut self) -> Result<Type, String> {
+        match self.current_tok().tok_name {
+            TokenName::Int => {
+                self.consume_tok();
+                Ok(Type::Int)
+            }
+            TokenName::Float => {
+                self.consume_tok();
+                Ok(Type::Float)
+            }
+            TokenName::Bool => {
+                self.consume_tok();
+                Ok(Type::Bool)
+            }
+            TokenName::String => {
+                self.consume_tok();
+                Ok(Type::String)
+            }
+            TokenName::Identifier => {
+                let id = self.current_tok().lexeme.clone();
+                self.consume_tok();
+                Ok(Type::Custom(id))
+            }
+            _ => Err("Expected a type".to_string()),
         }
     }
 }
