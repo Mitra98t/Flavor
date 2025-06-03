@@ -78,6 +78,7 @@ impl Lexer {
             (r"\{", TokenName::LBra),
             (r"\}", TokenName::Rbra),
             (r"[0-9]+", TokenName::Number),
+            (r#""(.*?)""#, TokenName::StringLiteral),
             (r"[a-zA-Z_][a-zA-Z0-9_]*", TokenName::Identifier),
             (r"[\s\S]*", TokenName::Unknown),
         ];

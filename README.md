@@ -9,7 +9,7 @@ _NovaScript_ is a programming language built to serve as a **learning platform**
 people interested in language development.
 
 The structure of the project is based on the collaborative creation of a
-programming language, _NovaScript_, documented in a sort of diary ([the book](https://mitra98t.github.io/NovaScript/introduction.html)).
+programming language, _NovaScript_, documented in a sort of diary ([the Book](https://mitra98t.github.io/NovaScript/introduction.html)).
 
 ## Philosophy
 
@@ -29,7 +29,7 @@ appropriate feedback.
 
 ### Book Contributions
 
-In the directory `./nova_script_book/` you will find [the book](https://mitra98t.github.io/NovaScript/introduction.html).
+In the directory `./nova_script_book/` you will find [the Book](https://mitra98t.github.io/NovaScript/introduction.html).
 To **contribute** to the book you will need to have [mdbook](https://rust-lang.github.io/mdBook/).
 Mdbook is a website creator to build beautiful documentations website using
 markdown file.

@@ -21,9 +21,9 @@ To check the tokens involved in the `let` definition, for instance, we can chain
 multiple calls of the `expect_token` method.
 This logic will be inserted in its method, let's call it `parse_let()`.
 This is where the problem arises.  
-The variables value, for the let definition, can be an expression which is
+The variables value, for the `let` definition, can be an expression which is
 composed of multiple tokens itself.
-This means that we will probably need a dedicated method to parse expression
+This means that we will probably need a dedicated method to parse expressions
 (`parse_expression()`).
 But then again, the expression is a recursive definition (we can have the
 expression `3+3+3+3+...`, meaning that to parse the operand of an operation we
@@ -37,9 +37,9 @@ accordingly.
 
 An important specification to do is related to the imperative structure of
 NovaScript.  
-In the code we can define a sequence of instructions (statements separated by the
+In the NovaScript code we can define a sequence of instructions (statements separated by the
 semicolon).
-This structure reflects on the implementation resulting in the parser producing
+This structure is reflected on the implementation of the parser, which will produce
 a vector of ASTs (one per statement).
 
 ## Development
@@ -48,7 +48,7 @@ As we have already done for the [lexer](./lexer.md), we will start by defining
 the necessary types to then use in the parser (the code is again found in
 [types](https://github.com/Mitra98t/NovaScript/blob/main/src/types.rs)).
 
-More precisely, we are going to define the AST nodes as the first thing.
+More precisely, we are going to define the AST nodes first.
 
 ```rust,no_run,noplayground:types.rs
 // ... Above
@@ -167,12 +167,12 @@ fn parse_statement(&mut self) -> ParseProduction {
 }
 ```
 
-Currently we have little support yet, the let declaration is the first element
+Currently we have little support yet, the `let` declaration is the first element
 in the list which would be followed by all the other statements.
 The default parsing will be `parse_expression_statement()` which is responsible
 for the handling of a statement as `3+4;`.
 
-> Why we need such statements without _side effects_? What are side effects?
+> Why do we need such statements without _side effects_? What are side effects?
 > What is the difference between statement, expression and expression-statement?
 > These are all topics which are discussed in chapter [TODO]().
 

@@ -52,6 +52,7 @@ impl TypeChecker {
             }
             // FIX: how to handle floats?
             ASTNode::NumberLiteral(_) => Ok(Type::Int),
+            ASTNode::StringLiteral(_) => Ok(Type::String),
             ASTNode::Identifier(name) => {
                 if let Some(t) = self.get(name.to_string()) {
                     Ok(t.clone())
@@ -60,8 +61,29 @@ impl TypeChecker {
                 }
             }
             ASTNode::ExpressionStatement(expr) => {
-                let _ = self.check(expr);
+                let _ = self.check(expr)?;
                 Ok(Type::Unit)
+            }
+            ASTNode::UnaryExpression {
+                operator,
+                operand,
+                is_postfix: _,
+            } => {
+                let operand_ty = self.check(operand)?;
+
+                match operator.as_str() {
+                    "-" | "+" | "--" | "++" => {
+                        if operand_ty == Type::Int {
+                            Ok(Type::Int)
+                        } else {
+                            Err(format!(
+                                "Unary operator '{}' requires Integer operand but found {:?}",
+                                operator, operand_ty,
+                            ))
+                        }
+                    }
+                    _ => Err(format!("Unknown unary operator '{}'", operator)),
+                }
             }
             ASTNode::BinaryExpression {
                 left,

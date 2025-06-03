@@ -183,6 +183,10 @@ impl Parser {
                 self.consume_tok();
                 Ok(ASTNode::NumberLiteral(tok.lexeme))
             }
+            TokenName::StringLiteral => {
+                self.consume_tok();
+                Ok(ASTNode::StringLiteral(tok.lexeme))
+            }
             TokenName::Identifier => {
                 self.consume_tok();
                 Ok(ASTNode::Identifier(tok.lexeme))

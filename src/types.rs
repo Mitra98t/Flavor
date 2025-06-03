@@ -51,6 +51,7 @@ pub enum TokenName {
 
     // Complex Elements
     Number,
+    StringLiteral,
     Identifier,
 
     // Utils
@@ -81,8 +82,8 @@ pub enum ASTNode {
         var_type: Option<Type>,
         expr: Box<ASTNode>,
     },
-
     NumberLiteral(String),
+    StringLiteral(String),
     Identifier(String),
     ArrayAccess {
         array: Box<ASTNode>,
@@ -127,6 +128,9 @@ fn print_node(node: &ASTNode, indent: usize) {
         }
         ASTNode::NumberLiteral(value) => {
             println!("{}NumberLiteral: {}", indent_str, value);
+        }
+        ASTNode::StringLiteral(value) => {
+            println!("{}StringLiteral: {}", indent_str, value);
         }
         ASTNode::Identifier(name) => {
             println!("{}Identifier: {}", indent_str, name);
