@@ -1,8 +1,8 @@
 # NovaScript
 
 <p align="center">
-  <img src="./assets/simple_code.png" alt="Image 1" width="200" style="display: inline-block; margin-right: 10px;" />
-  <img src="./assets/aliasing_example.png" alt="Image 2" width="200" style="display: inline-block;" />
+  <img src="./assets/simple_code.png" alt="Image 1" width="80%" style="display: inline-block; margin-right: 10px;" />
+  <img src="./assets/aliasing_example.png" alt="Image 2" width="18%" style="display: inline-block;" />
 </p>
 
 _NovaScript_ is a programming language built to serve as a **learning platform** for
