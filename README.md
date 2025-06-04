@@ -41,7 +41,7 @@ collaboration, please follow these guidelines:
 ### How to Contribute
 
 1. **Fork the repository and create your branch** from main:
-   `(git checkout -b feature/your-feature)`
+   `git checkout -b feature/your-feature`
 2. **Make your changes** with clear commit messages.
 3. **Test your changes**.
 4. **Submit a Pull Request** describing your changes and why they are needed.
