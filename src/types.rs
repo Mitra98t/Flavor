@@ -12,6 +12,11 @@ pub enum TokenName {
     Let,
     Fn,
     Alias,
+    Return,
+    If,
+    Else,
+    While,
+    Break,
 
     // Types
     Int,
@@ -21,6 +26,8 @@ pub enum TokenName {
     Nothing,
 
     // Symbols
+    Dot,
+    Comma,
     Colon,
     Semicolon,
     SlimArrow,
@@ -49,7 +56,7 @@ pub enum TokenName {
     LSqu,
     RSqu,
     LBra,
-    Rbra,
+    RBra,
 
     // Complex Elements
     Number,
@@ -72,15 +79,27 @@ pub enum Type {
     Unit,
     Custom(String),
     // Array(Box<Type>),
-    // Function {
-    //     param_types: Vec<Type>,
-    //     return_type: Box<Type>,
-    // },
+    Function {
+        param_types: Vec<Type>,
+        return_type: Box<Type>,
+    },
     // Unknown,
 }
 
 #[derive(Debug, Clone)]
 pub enum ASTNode {
+    Body {
+        nodes: Vec<ASTNode>,
+    },
+    If {
+        guard: Box<ASTNode>,
+        then_body: Box<ASTNode>,
+        else_body: Option<Box<ASTNode>>,
+    },
+    While {
+        guard: Box<ASTNode>,
+        body: Box<ASTNode>,
+    },
     LetDeclaration {
         identifier: String,
         var_type: Option<Type>,
@@ -88,10 +107,17 @@ pub enum ASTNode {
     },
     FunctionDeclaration {
         name: String,
-        parameters: Vec<(String, Type)>, // parameter name and optional type
+        parameters: Vec<(String, Type)>,
         return_type: Type,
-        body: Vec<ASTNode>,
+        body: Box<ASTNode>,
     },
+    Return(Box<ASTNode>),
+    Break,
+    FunctionCall {
+        callee: Box<ASTNode>,
+        arguments: Vec<ASTNode>,
+    },
+    UnitLiteral,
     NumberLiteral(String),
     StringLiteral(String),
     BoolLiteral(String),
@@ -122,6 +148,40 @@ pub fn print_ast(ast: Vec<ASTNode>) {
 fn print_node(node: &ASTNode, indent: usize) {
     let indent_str = "  ".repeat(indent);
     match node {
+        ASTNode::If {
+            guard,
+            then_body,
+            else_body,
+        } => {
+            println!("{}If:", indent_str);
+            println!("{}  Guard:", indent_str);
+            print_node(guard, indent + 2);
+            println!("{}  Then:", indent_str);
+            print_node(then_body, indent + 2);
+            if let Some(else_body) = else_body {
+                println!("{}  Else:", indent_str);
+                print_node(else_body, indent + 2);
+            }
+        }
+        ASTNode::While { guard, body } => {
+            println!("{}While:", indent_str);
+            println!("{}  Guard:", indent_str);
+            print_node(guard, indent + 2);
+            println!("{}  Body:", indent_str);
+            print_node(body, indent + 2);
+        }
+        ASTNode::Body { nodes } => {
+            for n in nodes {
+                print_node(n, indent);
+            }
+        }
+        ASTNode::Break => {
+            println!("{}Break", indent_str);
+        }
+        ASTNode::Return(expr) => {
+            println!("{}Return:", indent_str);
+            print_node(expr, indent + 2);
+        }
         ASTNode::LetDeclaration {
             identifier,
             var_type,
@@ -137,6 +197,32 @@ fn print_node(node: &ASTNode, indent: usize) {
             println!("{}  Expression:", indent_str);
             print_node(expr, indent + 2);
         }
+        ASTNode::FunctionDeclaration {
+            name,
+            parameters,
+            return_type,
+            body,
+        } => {
+            println!("{}FunctionDeclaration:", indent_str);
+            println!("{}  Name: {}", indent_str, name);
+            println!("{}  Parameters:", indent_str);
+            for p in parameters {
+                println!("{}    Name: {}", indent_str, p.0);
+                println!("{}    Type: {:?}", indent_str, p.1);
+            }
+            println!("{}  Return Type: {:?}", indent_str, return_type);
+            print_node(body, indent + 2);
+        }
+        ASTNode::FunctionCall { callee, arguments } => {
+            println!("{}FunctionCall:", indent_str);
+            println!("{}  Callee:", indent_str);
+            print_node(callee, indent + 2);
+            println!("{}  Arguments:", indent_str);
+            for a in arguments {
+                print_node(a, indent + 2);
+            }
+        }
+        ASTNode::UnitLiteral => {}
         ASTNode::NumberLiteral(value) => {
             println!("{}NumberLiteral: {}", indent_str, value);
         }
@@ -184,9 +270,6 @@ fn print_node(node: &ASTNode, indent: usize) {
         ASTNode::ExpressionStatement(expr) => {
             println!("{}ExpressionStatement:", indent_str);
             print_node(expr, indent + 1);
-        }
-        _ => {
-            println!("{}Unsupported node {:?}", indent_str, node)
         }
     }
 }

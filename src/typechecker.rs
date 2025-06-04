@@ -3,22 +3,37 @@ use std::collections::HashMap;
 use crate::types::{ASTNode, Type};
 
 pub struct TypeChecker {
-    variables: HashMap<String, Type>,
+    scopes: Vec<HashMap<String, Type>>,
 }
 
 impl TypeChecker {
     pub fn new() -> Self {
         Self {
-            variables: HashMap::new(),
+            scopes: vec![HashMap::new()],
         }
     }
 
     pub fn insert(&mut self, name: String, ty: Type) {
-        self.variables.insert(name, ty);
+        if let Some(scope) = self.scopes.last_mut() {
+            scope.insert(name, ty);
+        }
     }
 
     pub fn get(&self, name: String) -> Option<&Type> {
-        self.variables.get(&name)
+        for scope in self.scopes.iter().rev() {
+            if let Some(ty) = scope.get(&name) {
+                return Some(ty);
+            }
+        }
+        None
+    }
+
+    pub fn enter_scope(&mut self) {
+        self.scopes.push(HashMap::new());
+    }
+
+    pub fn exit_scope(&mut self) {
+        self.scopes.pop();
     }
 
     pub fn check_program(&mut self, nodes: &[ASTNode]) -> Result<(), String> {
@@ -50,6 +65,106 @@ impl TypeChecker {
                     Ok(expr_ty)
                 }
             }
+            ASTNode::FunctionDeclaration {
+                name,
+                parameters,
+                return_type,
+                body,
+            } => {
+                let func_ty = Type::Function {
+                    param_types: parameters.iter().map(|(_, t)| t.clone()).collect(),
+                    return_type: Box::new(return_type.clone()),
+                };
+
+                self.insert(name.clone(), func_ty);
+
+                // Enter Scope for function Body
+                self.enter_scope();
+
+                for (param_name, param_ty) in parameters {
+                    self.insert(param_name.clone(), param_ty.clone());
+                }
+
+                let _ = self.check(body)?;
+
+                self.exit_scope();
+                Ok(return_type.clone())
+
+                // TODO: The expected return type is not checked in the body
+            }
+            ASTNode::Body { nodes } => {
+                for n in nodes {
+                    self.check(n)?;
+                }
+                Ok(Type::Unit)
+            }
+            ASTNode::If {
+                guard,
+                then_body,
+                else_body,
+            } => {
+                let guard_ty = self.check(guard)?;
+
+                if guard_ty != Type::Bool {
+                    return Err(format!(
+                        "Guard in If statement should be of type Bool, but was {:?}",
+                        guard_ty,
+                    ));
+                }
+
+                let _ = self.check(then_body)?;
+                if let Some(else_body) = else_body {
+                    let _ = self.check(else_body)?;
+                }
+                Ok(Type::Unit)
+            }
+            ASTNode::While { guard, body } => {
+                let guard_ty = self.check(guard)?;
+
+                if guard_ty != Type::Bool {
+                    return Err(format!(
+                        "Guard in While statement should be of type Bool, but was {:?}",
+                        guard_ty,
+                    ));
+                }
+
+                let _ = self.check(body)?;
+                Ok(Type::Unit)
+            }
+            ASTNode::Break => Ok(Type::Unit),
+            ASTNode::FunctionCall { callee, arguments } => {
+                let callee_ty = self.check(callee)?;
+
+                match callee_ty {
+                    Type::Function {
+                        param_types,
+                        return_type,
+                    } => {
+                        // Check args count
+                        if param_types.len() != arguments.len() {
+                            return Err(format!(
+                                "Function called with wrong number of arguments: expected {}, found {}",
+                                param_types.len(),
+                                arguments.len()
+                            ));
+                        }
+
+                        for (arg_node, param_ty) in arguments.iter().zip(param_types.iter()) {
+                            let arg_ty = self.check(arg_node)?;
+                            if *param_ty != arg_ty {
+                                return Err(format!(
+                                    "Function argument type mismatch: expected {:?}, found {:?}",
+                                    param_ty, arg_ty
+                                ));
+                            }
+                        }
+
+                        Ok(*return_type.clone())
+                    }
+                    other => Err(format!("Attempted to call non-function type {:?}", other)),
+                }
+            }
+            ASTNode::UnitLiteral => Ok(Type::Unit),
             // FIX: how to handle floats?
             ASTNode::NumberLiteral(_) => Ok(Type::Int),
             ASTNode::StringLiteral(_) => Ok(Type::String),
@@ -60,6 +175,10 @@ impl TypeChecker {
                 } else {
                     Err(format!("Undefined variable '{}'", name))
                 }
+            }
+            ASTNode::Return(expr) => {
+                let expr_ty = self.check(expr)?;
+                Ok(expr_ty)
             }
             ASTNode::ExpressionStatement(expr) => {
                 let _ = self.check(expr)?;

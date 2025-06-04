@@ -1,4 +1,4 @@
-use crate::types::{Token, TokenName};
+use crate::types::{Token, TokenName as TN};
 use regex::Regex;
 
 pub struct Lexer {
@@ -20,7 +20,7 @@ impl Lexer {
             let tok = self.next_token();
 
             self.tokens.push(tok.clone());
-            if tok.tok_name == TokenName::Eof {
+            if tok.tok_name == TN::Eof {
                 break;
             }
         }
@@ -31,60 +31,67 @@ impl Lexer {
 
         if self.pos >= self.source.len() {
             return Token {
-                tok_name: TokenName::Eof,
+                tok_name: TN::Eof,
                 lexeme: "\0".to_string(),
             };
         }
 
         let mut tok = Token {
-            tok_name: TokenName::Unknown,
+            tok_name: TN::Unknown,
             lexeme: "".to_string(),
         };
 
         let mut length_of_tok: usize = 0;
 
         let patterns = [
-            (r"let", TokenName::Let),
-            (r"fn", TokenName::Fn),
-            (r"alias", TokenName::Alias),
-            (r"int", TokenName::Int),
-            (r"float", TokenName::Float),
-            (r"string", TokenName::String),
-            (r"bool", TokenName::Bool),
-            (r"noting", TokenName::Nothing),
-            (r"true", TokenName::True),
-            (r"false", TokenName::False),
-            (r":", TokenName::Colon),
-            (r";", TokenName::Semicolon),
-            (r"->", TokenName::SlimArrow),
-            (r"=>", TokenName::BoldArrow),
-            (r"==", TokenName::Eq),
-            (r"\!=", TokenName::NotEq),
-            (r"\=", TokenName::Assign),
-            (r"\!", TokenName::Not),
-            (r">=", TokenName::Ge),
-            (r"<=", TokenName::Le),
-            (r">", TokenName::Gt),
-            (r"<", TokenName::Lt),
-            (r"\+\+", TokenName::PlusPlus),
-            (r"--", TokenName::MinusMinus),
-            (r"\+", TokenName::Plus),
-            (r"-", TokenName::Minus),
-            (r"\*", TokenName::Times),
-            (r"/", TokenName::Div),
-            (r"%", TokenName::Percent),
-            (r"&&", TokenName::Percent),
-            (r"\|\|", TokenName::Percent),
-            (r"\(", TokenName::LPar),
-            (r"\)", TokenName::RPar),
-            (r"\[", TokenName::LSqu),
-            (r"\]", TokenName::RSqu),
-            (r"\{", TokenName::LBra),
-            (r"\}", TokenName::Rbra),
-            (r"[0-9]+", TokenName::Number),
-            (r#""(.*?)""#, TokenName::StringLiteral),
-            (r"[a-zA-Z_][a-zA-Z0-9_]*", TokenName::Identifier),
-            (r"[\s\S]*", TokenName::Unknown),
+            (r"let", TN::Let),
+            (r"fn", TN::Fn),
+            (r"alias", TN::Alias),
+            (r"int", TN::Int),
+            (r"float", TN::Float),
+            (r"string", TN::String),
+            (r"bool", TN::Bool),
+            (r"return", TN::Return),
+            (r"break", TN::Break),
+            (r"if", TN::If),
+            (r"else", TN::Else),
+            (r"while", TN::While),
+            (r"nothing", TN::Nothing),
+            (r"true", TN::True),
+            (r"false", TN::False),
+            (r"\.", TN::Dot),
+            (r",", TN::Comma),
+            (r":", TN::Colon),
+            (r";", TN::Semicolon),
+            (r"->", TN::SlimArrow),
+            (r"=>", TN::BoldArrow),
+            (r"==", TN::Eq),
+            (r"\!=", TN::NotEq),
+            (r"\=", TN::Assign),
+            (r"\!", TN::Not),
+            (r">=", TN::Ge),
+            (r"<=", TN::Le),
+            (r">", TN::Gt),
+            (r"<", TN::Lt),
+            (r"\+\+", TN::PlusPlus),
+            (r"--", TN::MinusMinus),
+            (r"\+", TN::Plus),
+            (r"-", TN::Minus),
+            (r"\*", TN::Times),
+            (r"/", TN::Div),
+            (r"%", TN::Percent),
+            (r"&&", TN::Percent),
+            (r"\|\|", TN::Percent),
+            (r"\(", TN::LPar),
+            (r"\)", TN::RPar),
+            (r"\[", TN::LSqu),
+            (r"\]", TN::RSqu),
+            (r"\{", TN::LBra),
+            (r"\}", TN::RBra),
+            (r"[0-9]+", TN::Number),
+            (r#""(.*?)""#, TN::StringLiteral),
+            (r"[a-zA-Z_][a-zA-Z0-9_]*", TN::Identifier),
+            (r"[\s\S]*", TN::Unknown),
         ];
 
         for (pattern, token_name) in patterns.iter() {

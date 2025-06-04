@@ -6,16 +6,35 @@ use lexer::Lexer;
 use parser::Parser;
 use typechecker::TypeChecker;
 
+#[allow(unused)]
 use crate::types::print_ast;
 
 fn main() {
     let code = r#"
-3++ + --7 * 4 > 3 / 2;
+
+while 5 >2 {
+    if true {
+        break;
+    }
+}
+
+fn foo (x: int, y: int) -> int {
+    return x + y;
+}
+
+foo(4,5);
+
 "#;
-    println!("SOURCE CODE\n{}\n----\n", code);
+    // println!("SOURCE CODE\n{}\n----\n", code);
 
     let mut lexer = Lexer::new(code);
     lexer.lexe();
+
+    // println!("TOKENS\n");
+    // for t in lexer.tokens.clone() {
+    //     println!("{:?}", t);
+    // }
+    // println!("\n----\n");
 
     let mut parser = Parser::new(lexer.tokens);
     let nodes = parser.parse_program();

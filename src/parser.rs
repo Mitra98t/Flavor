@@ -1,4 +1,4 @@
-use crate::types::{ASTNode, Token, TokenName, Type};
+use crate::types::{ASTNode, Token, TokenName as TN, Type};
 
 type ParseProduction = Result<ASTNode, String>;
 
@@ -26,7 +26,7 @@ impl Parser {
     /// The method consumes the tokens if it is correct.
     /// Returns a result with the token if success or the error string if failure.
     /// * `expected`: the expected token name
-    fn expect_tok(&mut self, expected: TokenName) -> Result<Token, String> {
+    fn expect_tok(&mut self, expected: TN) -> Result<Token, String> {
         let tok = self.current_tok();
 
         if tok.tok_name == expected {
@@ -46,19 +46,19 @@ impl Parser {
     /// * `token`: token to evaluate the precedence of
     fn get_precedence(token: &Token) -> Option<u8> {
         match token.tok_name {
-            TokenName::Times | TokenName::Div | TokenName::Percent => Some(150),
-            TokenName::Plus | TokenName::Minus => Some(120),
-            TokenName::Gt | TokenName::Lt | TokenName::Ge | TokenName::Le => Some(100),
-            TokenName::Eq | TokenName::NotEq => Some(80),
-            TokenName::And => Some(50),
-            TokenName::Or => Some(40),
+            TN::Times | TN::Div | TN::Percent => Some(150),
+            TN::Plus | TN::Minus => Some(120),
+            TN::Gt | TN::Lt | TN::Ge | TN::Le => Some(100),
+            TN::Eq | TN::NotEq => Some(80),
+            TN::And => Some(50),
+            TN::Or => Some(40),
             _ => None,
         }
     }
 
     pub fn parse_program(&mut self) -> Result<Vec<ASTNode>, String> {
         let mut nodes = Vec::new();
-        while self.current_tok().tok_name != TokenName::Eof {
+        while self.current_tok().tok_name != TN::Eof {
             nodes.push(self.parse_statement()?);
         }
         Ok(nodes)
@@ -66,57 +66,121 @@ impl Parser {
 
     fn parse_statement(&mut self) -> ParseProduction {
         match self.current_tok().tok_name {
-            TokenName::Let => self.parse_let_statement(),
-            TokenName::Fn => self.parse_function_declaration(),
+            TN::Let => self.parse_let_statement(),
+            TN::Fn => self.parse_function_declaration(),
+            TN::If => self.parse_if(),
+            TN::While => self.parse_while(),
+            TN::Return => self.parse_return(),
+            TN::Break => self.parse_break(),
+            TN::LBra => self.parse_body(),
             // TODO: aliasing, ecc...
             _ => self.parse_expression_statement(),
         }
     }
 
+    fn parse_while(&mut self) -> ParseProduction {
+        self.expect_tok(TN::While)?;
+        let guard = self.parse_expression()?;
+        let body = self.parse_body()?;
+
+        Ok(ASTNode::While {
+            guard: Box::new(guard),
+            body: Box::new(body),
+        })
+    }
+
+    fn parse_if(&mut self) -> ParseProduction {
+        self.expect_tok(TN::If)?;
+        let guard = self.parse_expression()?;
+        let then_body = self.parse_body()?;
+        let mut else_body = None;
+        if self.current_tok().tok_name == TN::Else {
+            else_body = Some(Box::new(self.parse_body()?));
+        }
+        // HACK: IF WITH Semicolon??
+        // self.expect_tok(TN::Semicolon)?;
+        Ok(ASTNode::If {
+            guard: Box::new(guard),
+            then_body: Box::new(then_body),
+            else_body,
+        })
+    }
+    fn parse_break(&mut self) -> ParseProduction {
+        self.expect_tok(TN::Break)?;
+        self.expect_tok(TN::Semicolon)?;
+        Ok(ASTNode::Break)
+    }
+
+    fn parse_return(&mut self) -> ParseProduction {
+        self.expect_tok(TN::Return)?;
+        let mut expr = Box::new(ASTNode::UnitLiteral);
+        if self.current_tok().tok_name != TN::Semicolon {
+            expr = Box::new(self.parse_expression()?);
+        }
+        self.expect_tok(TN::Semicolon)?;
+        Ok(ASTNode::Return(expr))
+    }
+
     fn parse_function_declaration(&mut self) -> ParseProduction {
-        self.expect_tok(TokenName::Fn)?;
-        let fn_name = self.expect_tok(TokenName::Identifier)?;
+        self.expect_tok(TN::Fn)?;
+        let fn_name = self.expect_tok(TN::Identifier)?;
 
         let parameters = self.parse_fn_parameters()?;
 
-        self.expect_tok(TokenName::SlimArrow)?;
+        self.expect_tok(TN::SlimArrow)?;
 
         let return_ty = self.parse_type()?;
 
-        self.expect_tok(TokenName::LBra)?;
-        let mut body_nodes = Vec::new();
-        while self.current_tok().tok_name != TokenName::Rbra {
-            body_nodes.push(self.parse_statement()?);
-        }
-        self.expect_tok(TokenName::Rbra)?;
+        let body = self.parse_body()?;
 
         Ok(ASTNode::FunctionDeclaration {
             name: fn_name.lexeme,
             parameters,
             return_type: return_ty,
-            body: body_nodes,
+            body: Box::new(body),
         })
     }
 
+    fn parse_body(&mut self) -> Result<ASTNode, String> {
+        assert_eq!(TN::LBra, self.current_tok().tok_name);
+        self.expect_tok(TN::LBra)?;
+
+        let mut statements: Vec<ASTNode> = vec![];
+        while self.current_tok().tok_name != TN::RBra {
+            let statement = self.parse_statement()?;
+            statements.push(statement);
+        }
+        self.expect_tok(TN::RBra)?;
+        Ok(ASTNode::Body { nodes: statements })
+    }
+
     fn parse_fn_parameters(&mut self) -> Result<Vec<(String, Type)>, String> {
-        self.expect_tok(TokenName::LPar)?;
+        self.expect_tok(TN::LPar)?;
         let mut params: Vec<(String, Type)> = vec![];
-        while self.current_tok().tok_name != TokenName::LPar {
-            let param_name = self.expect_tok(TokenName::Identifier)?;
-            self.expect_tok(TokenName::Colon)?;
+        loop {
+            if self.current_tok().tok_name == TN::RPar {
+                break;
+            }
+            let param_name = self.expect_tok(TN::Identifier)?;
+            self.expect_tok(TN::Colon)?;
             let param_ty = self.parse_type()?;
             params.push((param_name.lexeme, param_ty));
+            if self.current_tok().tok_name == TN::Comma {
+                self.consume_tok();
+            }
         }
+
+        self.expect_tok(TN::RPar)?;
 
         Ok(params)
     }
 
     fn parse_let_statement(&mut self) -> ParseProduction {
-        self.expect_tok(TokenName::Let)?;
-        let id_tok = self.expect_tok(TokenName::Identifier)?;
+        self.expect_tok(TN::Let)?;
+        let id_tok = self.expect_tok(TN::Identifier)?;
 
         // Optional Type definition
-        let var_type: Option<Type> = if self.current_tok().tok_name == TokenName::Colon {
+        let var_type: Option<Type> = if self.current_tok().tok_name == TN::Colon {
             // The type is being defined (there is the colon `:`)
             self.consume_tok();
             Some(self.parse_type()?)
@@ -125,9 +189,9 @@ impl Parser {
         };
 
         // Necessary initialization??
-        self.expect_tok(TokenName::Assign)?;
+        self.expect_tok(TN::Assign)?;
         let expr = self.parse_expression()?;
-        self.expect_tok(TokenName::Semicolon)?;
+        self.expect_tok(TN::Semicolon)?;
 
         // Return of the AST
         Ok(ASTNode::LetDeclaration {
@@ -139,7 +203,7 @@ impl Parser {
 
     fn parse_expression_statement(&mut self) -> ParseProduction {
         let expr = self.parse_expression()?;
-        self.expect_tok(TokenName::Semicolon)?;
+        self.expect_tok(TN::Semicolon)?;
         Ok(ASTNode::ExpressionStatement(Box::new(expr)))
     }
 
@@ -175,7 +239,7 @@ impl Parser {
         // Loop to handle chaining postfix
         loop {
             match self.current_tok().tok_name {
-                TokenName::PlusPlus | TokenName::MinusMinus => {
+                TN::PlusPlus | TN::MinusMinus => {
                     let op_tok = self.current_tok().clone();
                     self.consume_tok();
                     expr = ASTNode::UnaryExpression {
@@ -184,10 +248,10 @@ impl Parser {
                         is_postfix: true,
                     }
                 }
-                TokenName::LSqu => {
+                TN::LSqu => {
                     self.consume_tok(); // consume '['
                     let index_expr = self.parse_expression()?;
-                    self.expect_tok(TokenName::RSqu)?;
+                    self.expect_tok(TN::RSqu)?;
                     expr = ASTNode::ArrayAccess {
                         array: Box::new(expr),
                         index: Box::new(index_expr),
@@ -202,7 +266,7 @@ impl Parser {
     fn parse_unary_expression(&mut self) -> ParseProduction {
         let tok = self.current_tok().clone();
         match tok.tok_name {
-            TokenName::MinusMinus | TokenName::PlusPlus | TokenName::Minus | TokenName::Not => {
+            TN::MinusMinus | TN::PlusPlus | TN::Minus | TN::Not => {
                 // Consume unary operator
                 self.consume_tok();
 
@@ -221,26 +285,53 @@ impl Parser {
     fn parse_primary(&mut self) -> ParseProduction {
         let tok = self.current_tok().clone();
         match tok.tok_name {
-            TokenName::Number => {
+            TN::Nothing => {
+                self.consume_tok();
+                Ok(ASTNode::UnitLiteral)
+            }
+            TN::Number => {
                 self.consume_tok();
                 Ok(ASTNode::NumberLiteral(tok.lexeme))
             }
-            TokenName::True | TokenName::False => {
+            TN::True | TN::False => {
                 self.consume_tok();
                 Ok(ASTNode::BoolLiteral(tok.lexeme))
             }
-            TokenName::StringLiteral => {
+            TN::StringLiteral => {
                 self.consume_tok();
                 Ok(ASTNode::StringLiteral(tok.lexeme))
             }
-            TokenName::Identifier => {
-                self.consume_tok();
-                Ok(ASTNode::Identifier(tok.lexeme))
+            // Check for possible function call
+            TN::Identifier => {
+                let name = self.expect_tok(TN::Identifier)?.lexeme;
+                if self.current_tok().tok_name == TN::LPar {
+                    self.consume_tok();
+                    let mut arguments = Vec::new();
+                    if self.current_tok().tok_name != TN::RPar {
+                        loop {
+                            let expr_arg = self.parse_expression()?;
+                            arguments.push(expr_arg);
+
+                            if self.current_tok().tok_name == TN::Comma {
+                                self.consume_tok();
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    self.expect_tok(TN::RPar)?;
+                    Ok(ASTNode::FunctionCall {
+                        callee: Box::new(ASTNode::Identifier(name)),
+                        arguments,
+                    })
+                } else {
+                    Ok(ASTNode::Identifier(name))
+                }
             }
-            TokenName::LPar => {
+            TN::LPar => {
                 self.consume_tok();
                 let expr = self.parse_expression()?;
-                self.expect_tok(TokenName::RPar)?;
+                self.expect_tok(TN::RPar)?;
                 Ok(expr)
             }
             _ => Err(format!("Unexpected token in expression: {:?}", tok)),
@@ -249,23 +340,27 @@ impl Parser {
 
     fn parse_type(&mut self) -> Result<Type, String> {
         match self.current_tok().tok_name {
-            TokenName::Int => {
+            TN::Int => {
                 self.consume_tok();
                 Ok(Type::Int)
             }
-            TokenName::Float => {
+            TN::Float => {
                 self.consume_tok();
                 Ok(Type::Float)
             }
-            TokenName::Bool => {
+            TN::Bool => {
                 self.consume_tok();
                 Ok(Type::Bool)
             }
-            TokenName::String => {
+            TN::String => {
                 self.consume_tok();
                 Ok(Type::String)
             }
-            TokenName::Identifier => {
+            TN::Nothing => {
+                self.consume_tok();
+                Ok(Type::Unit)
+            }
+            TN::Identifier => {
                 let id = self.current_tok().lexeme.clone();
                 self.consume_tok();
                 Ok(Type::Custom(id))
