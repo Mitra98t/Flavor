@@ -6,12 +6,11 @@ use lexer::Lexer;
 use parser::Parser;
 use typechecker::TypeChecker;
 
+use crate::types::print_ast;
+
 fn main() {
     let code = r#"
-let x:int = "Ciao";
-let y:int = 10;
-
-x+y;
+3++ + --7 * 4 > 3 / 2;
 "#;
     println!("SOURCE CODE\n{}\n----\n", code);
 
@@ -21,12 +20,12 @@ x+y;
     let mut parser = Parser::new(lexer.tokens);
     let nodes = parser.parse_program();
 
-    // println!("AST\n");
-    // match &nodes {
-    //     Ok(n) => print_ast(n.to_vec()),
-    //     Err(e) => println!("{}", e),
-    // }
-    // println!("\n----\n");
+    println!("AST\n");
+    match &nodes {
+        Ok(n) => print_ast(n.to_vec()),
+        Err(e) => println!("{}", e),
+    }
+    println!("\n----\n");
 
     println!("Type Checking\n");
     let mut tc = TypeChecker::new();

@@ -46,9 +46,12 @@ impl Parser {
     /// * `token`: token to evaluate the precedence of
     fn get_precedence(token: &Token) -> Option<u8> {
         match token.tok_name {
-            TokenName::Plus | TokenName::Minus => Some(10),
-            TokenName::Times | TokenName::Div | TokenName::Percent => Some(20),
-            TokenName::Eq | TokenName::NotEq => Some(5),
+            TokenName::Times | TokenName::Div | TokenName::Percent => Some(150),
+            TokenName::Plus | TokenName::Minus => Some(120),
+            TokenName::Gt | TokenName::Lt | TokenName::Ge | TokenName::Le => Some(100),
+            TokenName::Eq | TokenName::NotEq => Some(80),
+            TokenName::And => Some(50),
+            TokenName::Or => Some(40),
             _ => None,
         }
     }
@@ -64,9 +67,48 @@ impl Parser {
     fn parse_statement(&mut self) -> ParseProduction {
         match self.current_tok().tok_name {
             TokenName::Let => self.parse_let_statement(),
-            // TODO: aliasing, fn declaration ecc...
+            TokenName::Fn => self.parse_function_declaration(),
+            // TODO: aliasing, ecc...
             _ => self.parse_expression_statement(),
         }
+    }
+
+    fn parse_function_declaration(&mut self) -> ParseProduction {
+        self.expect_tok(TokenName::Fn)?;
+        let fn_name = self.expect_tok(TokenName::Identifier)?;
+
+        let parameters = self.parse_fn_parameters()?;
+
+        self.expect_tok(TokenName::SlimArrow)?;
+
+        let return_ty = self.parse_type()?;
+
+        self.expect_tok(TokenName::LBra)?;
+        let mut body_nodes = Vec::new();
+        while self.current_tok().tok_name != TokenName::Rbra {
+            body_nodes.push(self.parse_statement()?);
+        }
+        self.expect_tok(TokenName::Rbra)?;
+
+        Ok(ASTNode::FunctionDeclaration {
+            name: fn_name.lexeme,
+            parameters,
+            return_type: return_ty,
+            body: body_nodes,
+        })
+    }
+
+    fn parse_fn_parameters(&mut self) -> Result<Vec<(String, Type)>, String> {
+        self.expect_tok(TokenName::LPar)?;
+        let mut params: Vec<(String, Type)> = vec![];
+        while self.current_tok().tok_name != TokenName::LPar {
+            let param_name = self.expect_tok(TokenName::Identifier)?;
+            self.expect_tok(TokenName::Colon)?;
+            let param_ty = self.parse_type()?;
+            params.push((param_name.lexeme, param_ty));
+        }
+
+        Ok(params)
     }
 
     fn parse_let_statement(&mut self) -> ParseProduction {
@@ -182,6 +224,10 @@ impl Parser {
             TokenName::Number => {
                 self.consume_tok();
                 Ok(ASTNode::NumberLiteral(tok.lexeme))
+            }
+            TokenName::True | TokenName::False => {
+                self.consume_tok();
+                Ok(ASTNode::BoolLiteral(tok.lexeme))
             }
             TokenName::StringLiteral => {
                 self.consume_tok();

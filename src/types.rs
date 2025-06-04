@@ -23,12 +23,12 @@ pub enum TokenName {
     // Symbols
     Colon,
     Semicolon,
+    SlimArrow,
+    BoldArrow,
     Assign,
     Eq,
     NotEq,
     Not,
-    SlimArrow,
-    BoldArrow,
     Gt,
     Lt,
     Ge,
@@ -40,6 +40,8 @@ pub enum TokenName {
     Times,
     Div,
     Percent,
+    And,
+    Or,
 
     // Parentheses
     LPar,
@@ -53,6 +55,8 @@ pub enum TokenName {
     Number,
     StringLiteral,
     Identifier,
+    True,
+    False,
 
     // Utils
     Unknown,
@@ -82,8 +86,15 @@ pub enum ASTNode {
         var_type: Option<Type>,
         expr: Box<ASTNode>,
     },
+    FunctionDeclaration {
+        name: String,
+        parameters: Vec<(String, Type)>, // parameter name and optional type
+        return_type: Type,
+        body: Vec<ASTNode>,
+    },
     NumberLiteral(String),
     StringLiteral(String),
+    BoolLiteral(String),
     Identifier(String),
     ArrayAccess {
         array: Box<ASTNode>,
@@ -129,6 +140,9 @@ fn print_node(node: &ASTNode, indent: usize) {
         ASTNode::NumberLiteral(value) => {
             println!("{}NumberLiteral: {}", indent_str, value);
         }
+        ASTNode::BoolLiteral(value) => {
+            println!("{}BoolLiteral: {}", indent_str, value);
+        }
         ASTNode::StringLiteral(value) => {
             println!("{}StringLiteral: {}", indent_str, value);
         }
@@ -170,6 +184,9 @@ fn print_node(node: &ASTNode, indent: usize) {
         ASTNode::ExpressionStatement(expr) => {
             println!("{}ExpressionStatement:", indent_str);
             print_node(expr, indent + 1);
+        }
+        _ => {
+            println!("{}Unsupported node {:?}", indent_str, node)
         }
     }
 }

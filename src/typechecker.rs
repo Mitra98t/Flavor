@@ -53,6 +53,7 @@ impl TypeChecker {
             // FIX: how to handle floats?
             ASTNode::NumberLiteral(_) => Ok(Type::Int),
             ASTNode::StringLiteral(_) => Ok(Type::String),
+            ASTNode::BoolLiteral(_) => Ok(Type::Bool),
             ASTNode::Identifier(name) => {
                 if let Some(t) = self.get(name.to_string()) {
                     Ok(t.clone())
@@ -72,6 +73,16 @@ impl TypeChecker {
                 let operand_ty = self.check(operand)?;
 
                 match operator.as_str() {
+                    "!" => {
+                        if operand_ty == Type::Bool {
+                            Ok(Type::Bool)
+                        } else {
+                            Err(format!(
+                                "Unary operator '{}' requires Bool operand but found {:?}",
+                                operator, operand_ty,
+                            ))
+                        }
+                    }
                     "-" | "+" | "--" | "++" => {
                         if operand_ty == Type::Int {
                             Ok(Type::Int)
@@ -94,12 +105,22 @@ impl TypeChecker {
                 let right_ty = self.check(right)?;
 
                 match operator.as_str() {
-                    "+" | "-" | "*" | "/" => {
+                    "+" | "-" | "*" | "/" | ">" | "<" | ">=" | "<=" => {
                         if left_ty == Type::Int && right_ty == Type::Int {
                             Ok(Type::Int)
                         } else {
                             Err(format!(
                                 "Operator '{}' requires Integer operands but found left: {:?}, right: {:?}",
+                                operator, left_ty, right_ty
+                            ))
+                        }
+                    }
+                    "&&" | "||" => {
+                        if left_ty == Type::Bool && right_ty == Type::Bool {
+                            Ok(Type::Bool)
+                        } else {
+                            Err(format!(
+                                "Operator '{}' requires Boolean operands but found left: {:?}, right: {:?}",
                                 operator, left_ty, right_ty
                             ))
                         }
