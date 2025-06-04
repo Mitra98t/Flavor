@@ -20,12 +20,38 @@ implementation choices and hopefully learning something.
 The Book serves to show the process behind the creation of a language showing
 the challenges as they come up.
 
-## Contributing
+## Try NovaScript!
 
-All contributions are welcome, at the moment I have to decide on guidelines to
-establish.
-In the meanwhile I will personally check the pull requests and try to give
-appropriate feedback.
+For now, the code is described as a string in the `main.rs` file.
+Simply run `cargo run` in the root of the repository to execute NovaScript.
+
+## Code Style
+
+- Follow the existing code style and conventions.
+  - I'm using the normal Rust notation validated by [clippy](https://github.com/rust-lang/rust-clippy)
+- Include comments where necessary.
+- Use the issue tracker to report bugs or request features.
+- Provide detailed information and steps to reproduce issues.
+
+## Contribution Guidelines
+
+Thank you for your interest in contributing to this project! To ensure a smooth
+collaboration, please follow these guidelines:
+
+### How to Contribute
+
+1. **Fork the repository and create your branch** from main:
+   `(git checkout -b feature/your-feature)`
+2. **Make your changes** with clear commit messages.
+3. **Test your changes**.
+4. **Submit a Pull Request** describing your changes and why they are needed.
+
+### Pull Request Process
+
+- Ensure your PR targets the main branch.
+- Include tests if applicable.
+- Keep your PR focused on a single issue or feature.
+- Be responsive to feedback and update your PR accordingly.
 
 ### Book Contributions
 
@@ -50,4 +76,4 @@ In the `./src/` directory you will find the source code for **NovaScript**.
 To run the **NovaScript** engine, simply run `cargo run` in the root directory
 of the project.
 
-> You will need to have Rust on your system and Cargo to manage the project.
+> You will need to have [Rust](https://www.rust-lang.org/it) on your system and [Cargo](https://doc.rust-lang.org/cargo/) to manage the project.
