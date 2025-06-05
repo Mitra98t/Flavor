@@ -1,8 +1,11 @@
 [book]
-authors = []
+authors = ["Quill"]
 language = "en"
 src = "src"
 title = "Flavor"
+
+[build]
+build-dir = "../docs/"
 
 [preprocessor.callouts]
 [preprocessor.codename]

@@ -1,0 +1,763 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Parser - Flavor</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Flavor</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <style>
+div.codeblock_filename_container + pre {
+  margin-top: 0;
+}
+
+span.codeblock_filename_inner {
+  border-radius: 0.4rem 0.4rem 0 0;
+  padding: 0.6rem 1rem 0.6rem 1rem;
+  font-family: var(--mono-font) !important;
+  font-size: var(--code-font-size);
+}
+
+</style>
+<style>
+.mdbook-callouts {
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  /* border-left: 0.25em solid var(--mdbook-callouts-color); */
+  background: var(--mdbook-callouts-background);
+}
+
+.mdbook-callouts > *:first-child {
+  margin-top: 0;
+}
+
+.mdbook-callouts > *:last-child {
+  margin-bottom: 0;
+}
+
+.mdbook-callouts-title {
+  display: flex;
+  font-weight: 600;
+  align-items: center;
+  line-height: 1;
+  color: var(--mdbook-callouts-color);
+  text-transform: capitalize;
+}
+
+.mdbook-callouts-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.2em;
+  background-color: currentColor;
+  -webkit-mask: no-repeat center / 100%;
+  mask: no-repeat center / 100%;
+  -webkit-mask-image: var(--mdbook-callouts-icon);
+  mask-image: var(--mdbook-callouts-icon);
+}
+
+/* icons at: https://lucide.dev/icons/ */
+
+.mdbook-callouts-info {
+  --mdbook-callouts-color: rgb(var(--color-blue-rgb));
+  --mdbook-callouts-background: rgba(var(--color-blue-rgb), 0.1);
+  /* https://lucide.dev/icons/info */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWluZm8iPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDE2di00Ii8+PHBhdGggZD0iTTEyIDhoLjAxIi8+PC9zdmc+');
+}
+
+.mdbook-callouts-note {
+  --mdbook-callouts-color: rgb(var(--color-blue-rgb));
+  --mdbook-callouts-background: rgba(var(--color-blue-rgb), 0.1);
+  /* https://lucide.dev/icons/pencil */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXBlbmNpbCI+PHBhdGggZD0iTTE3IDNhMi44NSAyLjgzIDAgMSAxIDQgNEw3LjUgMjAuNSAyIDIybDEuNS01LjVaIi8+PHBhdGggZD0ibTE1IDUgNCA0Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-tip,
+.mdbook-callouts-hint {
+  --mdbook-callouts-color: rgb(var(--color-cyan-rgb));
+  --mdbook-callouts-background: rgba(var(--color-cyan-rgb), 0.1);
+  /* https://lucide.dev/icons/flame */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWZsYW1lIj48cGF0aCBkPSJNOC41IDE0LjVBMi41IDIuNSAwIDAgMCAxMSAxMmMwLTEuMzgtLjUtMi0xLTMtMS4wNzItMi4xNDMtLjIyNC00LjA1NCAyLTYgLjUgMi41IDIgNC45IDQgNi41IDIgMS42IDMgMy41IDMgNS41YTcgNyAwIDEgMS0xNCAwYzAtMS4xNTMuNDMzLTIuMjk0IDEtM2EyLjUgMi41IDAgMCAwIDIuNSAyLjV6Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-important {
+  --mdbook-callouts-color: rgb(var(--color-purple-rgb));
+  --mdbook-callouts-background: rgba(var(--color-purple-rgb), 0.1);
+  /* https://lucide.dev/icons/alert-circle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWFsZXJ0LWNpcmNsZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48bGluZSB4MT0iMTIiIHgyPSIxMiIgeTE9IjgiIHkyPSIxMiIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyLjAxIiB5MT0iMTYiIHkyPSIxNiIvPjwvc3ZnPg==');
+}
+
+.mdbook-callouts-success,
+.mdbook-callouts-check,
+.mdbook-callouts-done {
+  --mdbook-callouts-color: rgb(var(--color-green-rgb));
+  --mdbook-callouts-background: rgba(var(--color-green-rgb), 0.1);
+  /* https://lucide.dev/icons/check */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNoZWNrIj48cGF0aCBkPSJNMjAgNiA5IDE3bC01LTUiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-question,
+.mdbook-callouts-help,
+.mdbook-callouts-faq {
+  --mdbook-callouts-color: rgb(var(--color-pink-rgb));
+  --mdbook-callouts-background: rgba(var(--color-pink-rgb), 0.1);
+  /* https://lucide.dev/icons/help-circle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWhlbHAtY2lyY2xlIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik05LjA5IDlhMyAzIDAgMCAxIDUuODMgMWMwIDItMyAzLTMgMyIvPjxwYXRoIGQ9Ik0xMiAxN2guMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-warning,
+.mdbook-callouts-warn {
+  --mdbook-callouts-color: rgb(var(--color-orange-rgb));
+  --mdbook-callouts-background: rgba(var(--color-orange-rgb), 0.1);
+  /* https://lucide.dev/icons/alert-triangle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWFsZXJ0LXRyaWFuZ2xlIj48cGF0aCBkPSJtMjEuNzMgMTgtOC0xNGEyIDIgMCAwIDAtMy40OCAwbC04IDE0QTIgMiAwIDAgMCA0IDIxaDE2YTIgMiAwIDAgMCAxLjczLTNaIi8+PHBhdGggZD0iTTEyIDl2NCIvPjxwYXRoIGQ9Ik0xMiAxN2guMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-caution {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/shield-alert */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXNoaWVsZC1hbGVydCI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEwIi8+PHBhdGggZD0iTTEyIDh2NCIvPjxwYXRoIGQ9Ik0xMiAxNmguMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-failure,
+.mdbook-callouts-fail,
+.mdbook-callouts-missing {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/x */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXgiPjxwYXRoIGQ9Ik0xOCA2IDYgMTgiLz48cGF0aCBkPSJtNiA2IDEyIDEyIi8+PC9zdmc+');
+}
+
+.mdbook-callouts-error,
+.mdbook-callouts-danger {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/zap */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXphcCI+PHBvbHlnb24gcG9pbnRzPSIxMyAyIDMgMTQgMTIgMTQgMTEgMjIgMjEgMTAgMTIgMTAgMTMgMiIvPjwvc3ZnPg==');
+}
+
+.mdbook-callouts-bug {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/bug */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJ1ZyI+PHBhdGggZD0ibTggMiAxLjg4IDEuODgiLz48cGF0aCBkPSJNMTQuMTIgMy44OCAxNiAyIi8+PHBhdGggZD0iTTkgNy4xM3YtMWEzLjAwMyAzLjAwMyAwIDEgMSA2IDB2MSIvPjxwYXRoIGQ9Ik0xMiAyMGMtMy4zIDAtNi0yLjctNi02di0zYTQgNCAwIDAgMSA0LTRoNGE0IDQgMCAwIDEgNCA0djNjMCAzLjMtMi43IDYtNiA2Ii8+PHBhdGggZD0iTTEyIDIwdi05Ii8+PHBhdGggZD0iTTYuNTMgOUM0LjYgOC44IDMgNy4xIDMgNSIvPjxwYXRoIGQ9Ik02IDEzSDIiLz48cGF0aCBkPSJNMyAyMWMwLTIuMSAxLjctMy45IDMuOC00Ii8+PHBhdGggZD0iTTIwLjk3IDVjMCAyLjEtMS42IDMuOC0zLjUgNCIvPjxwYXRoIGQ9Ik0yMiAxM2gtNCIvPjxwYXRoIGQ9Ik0xNy4yIDE3YzIuMS4xIDMuOCAxLjkgMy44IDQiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-examples,
+.mdbook-callouts-example {
+  --mdbook-callouts-color: rgb(var(--color-purple-rgb));
+  --mdbook-callouts-background: rgba(var(--color-purple-rgb), 0.1);
+  /* https://lucide.dev/icons/list */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWxpc3QiPjxsaW5lIHgxPSI4IiB4Mj0iMjEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSI4IiB4Mj0iMjEiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjgiIHgyPSIyMSIgeTE9IjE4IiB5Mj0iMTgiLz48bGluZSB4MT0iMyIgeDI9IjMuMDEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSIzIiB4Mj0iMy4wMSIgeTE9IjEyIiB5Mj0iMTIiLz48bGluZSB4MT0iMyIgeDI9IjMuMDEiIHkxPSIxOCIgeTI9IjE4Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-quote {
+  --mdbook-callouts-color: rgb(158, 158, 158);
+  --mdbook-callouts-background: rgba(158, 158, 158, 0.1);
+  /* https://lucide.dev/icons/quote */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXF1b3RlIj48cGF0aCBkPSJNMyAyMWMzIDAgNy0xIDctOFY1YzAtMS4yNS0uNzU2LTIuMDE3LTItMkg0Yy0xLjI1IDAtMiAuNzUtMiAxLjk3MlYxMWMwIDEuMjUuNzUgMiAyIDIgMSAwIDEgMCAxIDF2MWMwIDEtMSAyLTIgMnMtMSAuMDA4LTEgMS4wMzFWMjBjMCAxIDAgMSAxIDF6Ii8+PHBhdGggZD0iTTE1IDIxYzMgMCA3LTEgNy04VjVjMC0xLjI1LS43NTctMi4wMTctMi0yaC00Yy0xLjI1IDAtMiAuNzUtMiAxLjk3MlYxMWMwIDEuMjUuNzUgMiAyIDJoLjc1YzAgMi4yNS4yNSA0LTIuNzUgNHYzYzAgMSAwIDEgMSAxeiIvPjwvc3ZnPg==');
+}
+
+
+.ayu {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.light {
+  --color-red-rgb: 233, 49, 71;
+  --color-red: #e93147;
+  --color-orange-rgb: 236, 117, 0;
+  --color-orange: #ec7500;
+  --color-yellow-rgb: 224, 172, 0;
+  --color-yellow: #e0ac00;
+  --color-green-rgb: 8, 185, 78;
+  --color-green: #08b94e;
+  --color-cyan-rgb: 0, 191, 188;
+  --color-cyan: #00bfbc;
+  --color-blue-rgb: 8, 109, 221;
+  --color-blue: #086ddd;
+  --color-purple-rgb: 120, 82, 238;
+  --color-purple: #7852ee;
+  --color-pink-rgb: 213, 57, 132;
+  --color-pink: #d53984;
+}
+
+.coal {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.navy {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.rust {
+  --color-red-rgb: 233, 49, 71;
+  --color-red: #e93147;
+  --color-orange-rgb: 236, 117, 0;
+  --color-orange: #ec7500;
+  --color-yellow-rgb: 224, 172, 0;
+  --color-yellow: #e0ac00;
+  --color-green-rgb: 8, 185, 78;
+  --color-green: #08b94e;
+  --color-cyan-rgb: 0, 191, 188;
+  --color-cyan: #00bfbc;
+  --color-blue-rgb: 8, 109, 221;
+  --color-blue: #086ddd;
+  --color-purple-rgb: 120, 82, 238;
+  --color-purple: #7852ee;
+  --color-pink-rgb: 213, 57, 132;
+  --color-pink: #d53984;
+}
+</style>
+<h1 id="parser"><a class="header" href="#parser">Parser</a></h1>
+<p>In this chapter, we describe the creation of the parser to produce the ASTs from
+the token list.</p>
+<h2 id="setup"><a class="header" href="#setup">Setup</a></h2>
+<p>Let us discuss the possible implementation choices for a parser.
+There are multiple routes we could take; the standard strategy involves the
+usa of some library for the <em>parser creation</em> (<a href="https://it.wikipedia.org/wiki/Yacc">yacc</a> is a good example).
+To stay true to the project philosophy, we will implement everything from
+scratch.<br />
+Let us imagine the solution to this problem.</p>
+<p><em>We are working at a level of abstraction at this stage.</em><br />
+The most basic behavior that the parser must incorporate is the capability to
+check tokens to assess the correctness of the order in which they appear.
+We can logically conclude that we will use a method like <code>expect_token(expected: token)</code>.
+Assuming the presence of such method, we can then imagine how we can use it.
+To check the tokens involved in the <code>let</code> definition, for instance, we can chain
+multiple calls of the <code>expect_token</code> method.
+This logic will be inserted in its method, let's call it <code>parse_let()</code>.
+This is where the problem arises.<br />
+The variables value, for the <code>let</code> definition, can be an expression which is
+composed of multiple tokens itself.
+This means that we will probably need a dedicated method to parse expressions
+(<code>parse_expression()</code>).
+But then again, the expression is a recursive definition (we can have the
+expression <code>3+3+3+3+...</code>, meaning that to parse the operand of an operation we
+can encounter the operation itself as a child: <strong>recursion</strong>).<br />
+That is basically it, we just need to specify the precedence in which we want to
+evaluate the operations, and then recursively call the parsing functions
+accordingly.</p>
+<div class="mdbook-callouts mdbook-callouts-important">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  important
+</p>
+<p>This kind of parser is called <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser">Recursive Descent Parser</a></p>
+</div>
+<p>An important specification to do is related to the imperative structure of
+Flavor.<br />
+In the Flavor code we can define a sequence of instructions (statements separated by the
+semicolon).
+This structure is reflected on the implementation of the parser, which will produce
+a vector of ASTs (one per statement).</p>
+<h2 id="development"><a class="header" href="#development">Development</a></h2>
+<p>As we have already done for the <a href="./lexer.html">lexer</a>, we will start by defining
+the necessary types to then use in the parser (the code is again found in
+<a href="https://github.com/Mitra98t/Flavor/blob/main/src/types.rs">types</a>).</p>
+<p>More precisely, we are going to define the AST nodes first.</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">types.rs</span></div>
+<pre><code class="language-rust no_run noplayground">// ... Above
+pub enum ASTNode {
+    LetDeclaration {
+        identifier: String,
+        var_type: Option&lt;String&gt;,
+        expr: Box&lt;ASTNode&gt;,
+    },
+    NumberLiteral(String),
+    Identifier(String),
+    ArrayAccess {
+        array: Box&lt;ASTNode&gt;,
+        index: Box&lt;ASTNode&gt;,
+    },
+    BinaryExpression {
+        left: Box&lt;ASTNode&gt;,
+        operator: String,
+        right: Box&lt;ASTNode&gt;,
+    },
+    UnaryExpression {
+        operator: String,
+        operand: Box&lt;ASTNode&gt;,
+        is_postfix: bool,
+    },
+    ExpressionStatement(Box&lt;ASTNode&gt;),
+}</code></pre>
+<p>From this definition alone the recursive nature of the parser structure is
+apparent.
+Notice how the expression (<code>expr</code>) in the <code>LetDeclaration</code> node is itself of
+type <code>ASTNode</code>.</p>
+<p>We can then define the parser as the following struct (code found in <a href="https://github.com/Mitra98t/Flavor/blob/main/src/parser.rs">parser</a>):</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
+<pre><code class="language-rust no_run noplayground">pub struct Parser {
+    tokens: Vec&lt;Token&gt;,
+    pos: usize,
+}</code></pre>
+<p>We just need the token list to check and the current position we are checking.</p>
+<p>The interesting part follows.<br />
+In the book we will report just a part of the parser highlighting the most
+important steps and elements.
+The entire code is found on the <a href="https://github.com/Mitra98t/Flavor">GitHub of the project</a> (entirely open source, feel free to <em>contribute</em>).<br />
+We will define the entry point for the parser as a public method together with
+some helper functions.</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
+<pre><code class="language-rust no_run noplayground">// ... Above
+
+impl Parser {
+    // Helper
+    fn current_tok(&amp;self) -&gt; &amp;Token {
+        &amp;self.tokens[self.pos]
+    }
+
+    // Helper
+    fn consume_tok(&amp;mut self) {
+        if self.pos &lt; self.tokens.len() - 1 {
+            self.pos += 1;
+        }
+    }
+
+    // Helper
+    fn expect_tok(&amp;mut self, expected: TokenName) -&gt; Result&lt;Token, String&gt; {
+        let tok = self.current_tok();
+
+        if tok.tok_name == expected {
+            let tok = tok.clone();
+            self.consume_tok();
+            Ok(tok)
+        } else {
+            Err(format!(
+                "Expected token {:?}, found {:?} ('{}')",
+                expected, tok.tok_name, tok.lexeme
+            ))
+        }
+    }
+
+    // Entry Point
+    pub fn parse_program(&amp;mut self) -&gt; Result&lt;Vec&lt;ASTNode&gt;, String&gt; {
+        let mut nodes = Vec::new();
+        while self.current_tok().tok_name != TokenName::Eof {
+            nodes.push(self.parse_statement()?);
+        }
+        Ok(nodes)
+    }
+}</code></pre>
+<p>These helper methods allow us to get the current token, consume it
+(shift the list starting point right one position), and to check the token with a given
+<code>TokenName</code>.</p>
+<p>Lastly, the <code>parse_program()</code> method will serve as an entry point for the
+parser.
+Notice the signature of the method which will return the vector of ASTs.</p>
+<p>Now for the fun stuff, we will need the collection of parser functions to handle
+the different elements of the grammar.<br />
+First off, the <code>parse_statement()</code> method which is responsible for the parsing
+of all the different statements we support in Flavor.</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
+<pre><code class="language-rust no_run noplayground">fn parse_statement(&amp;mut self) -&gt; ParseProduction {
+    match self.current_tok().tok_name {
+        TokenName::Let =&gt; self.parse_let_statement(),
+        // TODO: aliasing, fn declaration, return statement, ecc...
+        _ =&gt; self.parse_expression_statement(),
+    }
+}</code></pre>
+<p>Currently we have little support yet, the <code>let</code> declaration is the first element
+in the list which would be followed by all the other statements.
+The default parsing will be <code>parse_expression_statement()</code> which is responsible
+for the handling of a statement as <code>3+4;</code>.</p>
+<blockquote>
+<p>Why do we need such statements without <em>side effects</em>? What are side effects?
+What is the difference between statement, expression and expression-statement?
+These are all topics which are discussed in chapter <a href="">TODO</a>.</p>
+</blockquote>
+<p>Let us now analyze the method for the parsing of let declarations
+(<code>parse_let_statement()</code>).
+This will serve as an example to understand how we can apply the grammar in the
+parser to check the tokens.
+We can describe the <code>let</code> statement as follows: <code>let identifier (':' identifier)? '=' &lt;expr&gt; ';'</code>.
+This means that we expect, in order:</p>
+<ol>
+<li>the <code>let</code> token</li>
+<li>the <code>identifier</code> token</li>
+<li><em>optionally</em>, the <code>colon</code> followed by another identifier</li>
+<li>the equal sign '=' token</li>
+<li>a collection of tokens composing an expression</li>
+<li>the semicolon <code>;</code> token</li>
+</ol>
+<!-- FIX: the type should be its own token?? -->
+<p>To achieve this pattern of checks we implement the following code:</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
+<pre><code class="language-rust no_run noplayground">fn parse_let_statement(&amp;mut self) -&gt; Result&lt;ASTNode, String&gt; {
+    self.expect_tok(TokenName::Let)?;
+    let id_tok = self.expect_tok(TokenName::Identifier)?;
+
+    let var_type: Option&lt;String&gt; = if self.current_tok().tok_name == TokenName::Colon {
+        self.consume_tok();
+        Some(self.parse_type()?)
+    } else {
+        None
+    };
+
+    self.expect_tok(TokenName::Assign)?;
+    let expr = self.parse_expression()?;
+    self.expect_tok(TokenName::Semicolon)?;
+
+    // Return of the AST
+    Ok(ASTNode::LetDeclaration {
+        identifier: id_tok.lexeme,
+        var_type,
+        expr: Box::new(expr),
+    })
+}</code></pre>
+<p>Notice how the required tokens are checked in sequence.
+The usage of the <code>?</code> is useful due to the return type of the parse functions.
+The functions will return a <code>Result</code> type; if an error is present, the <code>?</code> symbol
+allows to escalate it to the caller.</p>
+<blockquote>
+<p>For those of you that are reimplementing Flavor in other languages, this
+escalation system can be achieved by using <code>throw</code> and <code>try-catch</code> in Java for
+example.<br />
+Custom made solutions are also possible if not encouraged.
+We will experiment with a custom error handling and report system later in this
+book.</p>
+</blockquote>
+<p>In this definition, the initialization value is required, while the declaration type
+is optional.
+This is shown in the implementation where the presence of the type is checked using an <code>if</code> statement,
+and the <code>var_type</code> variable is of type <code>Option</code>, meaning it can be <code>None</code>.</p>
+<div class="mdbook-callouts mdbook-callouts-important">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  important
+</p>
+<p>The <code>expect_tok()</code> method also returns a <code>Result</code>.
+That is so that the method will return the token if the check is positive and
+a structured error message if the check is negative.
+Having the method return a token allows for the caller to use it to compose
+the node of the AST.</p>
+</div>
+<p>In this example, the <code>id_tok</code> is stored with the return value of the
+<code>expect_tok()</code> after checking if the token is an identifier.
+The <code>id_tok</code> variable is then used to compile the <code>LetDeclaration</code> ASTNode.</p>
+<p>The final important element in this example is the call to the <code>parse_expression()</code> method.
+As we said prior, the grammar expects an expression after the <code>=</code> symbol.
+The implementation will represent this with the calling of the
+<code>parse_expression()</code> method.<br />
+To make it absolutely clear, the structure of the <code>parse_expression()</code> method
+will reseamble the on in <code>parse_let_statement()</code>.
+Also checking the token sequence and calling other parse methods as necessary to
+then compose an AST.
+The AST obtained from the <code>parse_expression()</code> will be then used in the
+<code>LetDeclaration</code> AST node in the example.</p>
+<h3 id="operator-precedence"><a class="header" href="#operator-precedence">Operator Precedence</a></h3>
+<p>We have talked about <em>precedence</em> in an informal way.
+In the context of <strong>operations</strong>, the precedence is a value to represent the
+ordering in which to execute said operations.</p>
+<p>We represent this ordering with the following function.</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
+<pre><code class="language-rust no_run noplayground">// ... Above
+fn get_precedence(token: &amp;Token) -&gt; Option&lt;u8&gt; {
+    match token.tok_name {
+        TokenName::Plus | TokenName::Minus =&gt; Some(10),
+        TokenName::Times | TokenName::Div | TokenName::Percent =&gt; Some(20),
+        TokenName::Eq | TokenName::NotEq =&gt; Some(5),
+        _ =&gt; None,
+    }
+}</code></pre>
+<p>With this system we can associate to each operation an <strong>priority value</strong> and we
+can then parse those operations accordingly.</p>
+<p>The function responsible for the parsing is the following.</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
+<pre><code class="language-rust no_run noplayground">fn parse_binary_expression(&amp;mut self, min_prec: u8) -&gt; ParseProduction {
+    let mut left = self.parse_postfix_expression()?;
+
+    while let Some(prec) = Self::get_precedence(self.current_tok()) {
+        if prec &lt; min_prec {
+            break;
+        }
+
+        let op_tok = self.current_tok().clone();
+        self.consume_tok();
+
+        let right = self.parse_binary_expression(prec + 1)?;
+        left = ASTNode::BinaryExpression {
+            left: Box::new(left),
+            operator: op_tok.lexeme,
+            right: Box::new(right),
+        }
+    }
+    Ok(left)
+}</code></pre>
+<p>The important detail in this function are the usage of the recursion calling the
+<code>parse_binary_expression()</code> method itself for the right operand of the
+operation; and the usage of a precedence check to correctly stop the evaluation
+of the operations.
+The recursive call of the method will increase the precedence value to ensure
+that the right child of an operation node is always of an higher precedence.</p>
+<p>We will leave out all the parsing methods.
+Just one more will be included in the book.
+Specifically, the parsing method responsible for the parsing of terminal nodes.</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
+<pre><code class="language-rust no_run noplayground">fn parse_primary(&amp;mut self) -&gt; ParseProduction {
+    let tok = self.current_tok().clone();
+    match tok.tok_name {
+        TokenName::Number =&gt; {
+            self.consume_tok();
+            Ok(ASTNode::NumberLiteral(tok.lexeme))
+        }
+        TokenName::Identifier =&gt; {
+            self.consume_tok();
+            Ok(ASTNode::Identifier(tok.lexeme))
+        }
+        TokenName::LPar =&gt; {
+            self.consume_tok();
+            let expr = self.parse_expression()?;
+            self.expect_tok(TokenName::RPar)?;
+            Ok(expr)
+        }
+        _ =&gt; Err(format!("Unexpected token in expression: {:?}", tok)),
+    }
+}</code></pre>
+<p>Here the parsing is simpler; the token gets checked.
+If it is a terminal token, then the corresponding AST node is returned.
+If, instead, it is a parenthesis, then we recursively call the
+<code>parse_expression()</code> method restarting the cycle.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../implementation/lexer.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../implementation/lexer.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
