@@ -1,7 +1,10 @@
 # Introduction
 
-In this book, we will follow my attempt at building a simple programming
-language.
+> [!WARNING]
+> Book rework in progress
+
+In this book, we will follow my attempt at building a simple community driven programming
+language [GitHub Repository](https://github.com/Mitra98t/Flavor).
 It is not my first time attempting such a project, but it is the first time
 doing it in a structured way while sharing the process and the code.
 The other attempts were more of a learning experience; one time producing a
@@ -13,8 +16,8 @@ me.
 
 To specify some things before we start:
 
-- This project is not meant to be a learning resource, but rather a learning
-  platform; the idea of sharing this experience is guided by the hope that it
+- This project is not meant to be a _learning resource_, but rather a **learning
+  platform**; the idea of sharing this experience is guided by the hope that it
   will help others learn from my mistakes and successes.
   I also hope to learn from suggestions and critics along the way myself.
 - This book will primarily show my reasoning process and the decisions I make
@@ -68,21 +71,20 @@ quite new to the topic of programming languages.
 
 ## How to read this book
 
-The book is structured as a sort of _diary_ journaling the development of Flavor.
+The book is structured as a sort of _diary_ journaling the development of _Flavor_.  
 For that reason the chapter will not follow a logical structure, but instead
 will follow the production timeline.
-This means that we can go back to describing the design of the language at any moment
-during development to accurately follow my steps.
-The implementation on the other hand will be structured based on the code
-itself; the chapter related to the **[Lexer](./implementation/lexer.md)**, for instance, will describe the lexer's
-implementation mimicking the _wiki_ of a project.  
-To reiterate, the [implementation](./implementation/implementation.md) section will be structured and organized
-logically, while the rest of the book will follow the development timeline.
 
-If you are following the production of this book, then you might find the
-content of this paragraph rather unsatisfying.
-I will expand on this paragraph when I need to include a new notation in the
-book.
+To maintain a structured system in the book, it will be structured as follows:
+
+- **Language Development**
+  - Describes language development concepts and ideas.
+- **Design**
+  - Outlines the design choices behind the Flavor language discussing
+    their concequences and implications.
+  - Flavor features
+- **Implementation**
+  - Describes the implementation structure digging deep in the code.
 
 **Look out for the call-outs!**
 I will insert call-outs in the book, each one means something.
@@ -133,9 +135,7 @@ to come up with solutions that I am reasonably happy with.
 
 ## Flavor
 
-**Flavor**, the language protagonist of this book.  
-The name is not meant to represent anything; I just find it sci-fi enough so
-that is seems useful.
+**Flavor**, the language protagonist of this book.
 
 Flavor will be an interpreted language (unless I manange to write a compiler)
 offering a strict typing system, type inference, function and lambdas, and --

@@ -67,6 +67,8 @@ To successfully see the book while writing, you will need two plugins:
   [obsidian style callouts](https://help.obsidian.md/callouts)
 - [mdbook-codename](https://crates.io/crates/mdbook-codename) to display the
   file name or header in the code snippets
+- [mdbook-footnote](https://github.com/daviddrysdale/mdbook-footnote) to allow
+  for the usage of footnotes
 
 Once everything has been installed, cd into the book directory and run `mdbook
 serve --open` to see the book while writing.

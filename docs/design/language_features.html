@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Parser - Flavor</title>
+        <title>Language Features - Flavor</title>
 
 
         <!-- Custom HTML head -->
@@ -416,325 +416,366 @@ span.codeblock_filename_inner {
   --color-pink: #d53984;
 }
 </style>
-<h1 id="parser"><a class="header" href="#parser">Parser</a></h1>
-<p>In this chapter, we describe the creation of the parser to produce the ASTs from
-the token list.</p>
-<h2 id="setup"><a class="header" href="#setup">Setup</a></h2>
-<p>Let us discuss the possible implementation choices for a parser.
-There are multiple routes we could take; the standard strategy involves the
-usa of some library for the <em>parser creation</em> (<a href="https://it.wikipedia.org/wiki/Yacc">yacc</a> is a good example).
-To stay true to the project philosophy, we will implement everything from
-scratch.<br />
-Let us imagine the solution to this problem.</p>
-<p><em>We are working at a level of abstraction at this stage.</em><br />
-The most basic behavior that the parser must incorporate is the capability to
-check tokens to assess the correctness of the order in which they appear.
-We can logically conclude that we will use a method like <code>expect_token(expected: token)</code>.
-Assuming the presence of such method, we can then imagine how we can use it.
-To check the tokens involved in the <code>let</code> definition, for instance, we can chain
-multiple calls of the <code>expect_token</code> method.
-This logic will be inserted in its method, let's call it <code>parse_let()</code>.
-This is where the problem arises.<br />
-The variables value, for the <code>let</code> definition, can be an expression which is
-composed of multiple tokens itself.
-This means that we will probably need a dedicated method to parse expressions
-(<code>parse_expression()</code>).
-But then again, the expression is a recursive definition (we can have the
-expression <code>3+3+3+3+...</code>, meaning that to parse the operand of an operation we
-can encounter the operation itself as a child: <strong>recursion</strong>).<br />
-That is basically it, we just need to specify the precedence in which we want to
-evaluate the operations, and then recursively call the parsing functions
-accordingly.</p>
-<div class="mdbook-callouts mdbook-callouts-important">
+<h1 id="language-features-and-style"><a class="header" href="#language-features-and-style">Language Features and Style</a></h1>
+<p>In designing a programming language, seemingly small choices—such as whether to
+use semicolons or parentheses in certain contexts—can have significant
+implications on the language’s readability, expressiveness, and user experience.
+These choices shape not only how code looks but also how it feels to write and
+maintain it.</p>
+<p>In this chapter, we analyze the implications of such decisions and explore their
+impact on the language’s style and usability. We will begin by examining the use
+of semicolons and parentheses, then expand to other stylistic and syntactic
+choices that influence the overall flavor of the language.</p>
+<p>Next, we will examine design choices related to implementation aspects, such as
+memory management, scopes, and more.</p>
+<div class="mdbook-callouts mdbook-callouts-note">
 <p class="mdbook-callouts-title">
   <span class="mdbook-callouts-icon"></span>
-  important
+  note
 </p>
-<p>This kind of parser is called <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser">Recursive Descent Parser</a></p>
+<p>If you have a different perspective or think I missed something in any of the
+following points, please create an
+<a href="https://github.com/Mitra98t/Flavor/issues">issue</a> or contribute directly on
+<a href="https://github.com/Mitra98t/Flavor">GitHub</a>.</p>
 </div>
-<p>An important specification to do is related to the imperative structure of
-Flavor.<br />
-In the Flavor code we can define a sequence of instructions (statements separated by the
-semicolon).
-This structure is reflected on the implementation of the parser, which will produce
-a vector of ASTs (one per statement).</p>
-<h2 id="development"><a class="header" href="#development">Development</a></h2>
-<p>As we have already done for the <a href="./lexer.html">lexer</a>, we will start by defining
-the necessary types to then use in the parser (the code is again found in
-<a href="https://github.com/Mitra98t/Flavor/blob/main/src/types.rs">types</a>).</p>
-<p>More precisely, we are going to define the AST nodes first.</p>
-<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">types.rs</span></div>
-<pre><code class="language-rust no_run noplayground">// ... Above
-pub enum ASTNode {
-    LetDeclaration {
-        identifier: String,
-        var_type: Option&lt;String&gt;,
-        expr: Box&lt;ASTNode&gt;,
-    },
-    NumberLiteral(String),
-    Identifier(String),
-    ArrayAccess {
-        array: Box&lt;ASTNode&gt;,
-        index: Box&lt;ASTNode&gt;,
-    },
-    BinaryExpression {
-        left: Box&lt;ASTNode&gt;,
-        operator: String,
-        right: Box&lt;ASTNode&gt;,
-    },
-    UnaryExpression {
-        operator: String,
-        operand: Box&lt;ASTNode&gt;,
-        is_postfix: bool,
-    },
-    ExpressionStatement(Box&lt;ASTNode&gt;),
-}</code></pre>
-<p>From this definition alone the recursive nature of the parser structure is
-apparent.
-Notice how the expression (<code>expr</code>) in the <code>LetDeclaration</code> node is itself of
-type <code>ASTNode</code>.</p>
-<p>We can then define the parser as the following struct (code found in <a href="https://github.com/Mitra98t/Flavor/blob/main/src/parser.rs">parser</a>):</p>
-<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
-<pre><code class="language-rust no_run noplayground">pub struct Parser {
-    tokens: Vec&lt;Token&gt;,
-    pos: usize,
-}</code></pre>
-<p>We just need the token list to check and the current position we are checking.</p>
-<p>The interesting part follows.<br />
-In the book we will report just a part of the parser highlighting the most
-important steps and elements.
-The entire code is found on the <a href="https://github.com/Mitra98t/Flavor">GitHub of the project</a> (entirely open source, feel free to <em>contribute</em>).<br />
-We will define the entry point for the parser as a public method together with
-some helper functions.</p>
-<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
-<pre><code class="language-rust no_run noplayground">// ... Above
+<h2 id="semicolons-to-use-or-not-to-use"><a class="header" href="#semicolons-to-use-or-not-to-use">Semicolons: To Use or Not to Use?</a></h2>
+<p>The semicolon (<code>;</code>) is a classic statement terminator in many languages such as
+C, Java, and Rust. Its presence can convey important semantic information and
+affect how code is parsed and understood.</p>
+<h3 id="implications-of-using-semicolons"><a class="header" href="#implications-of-using-semicolons">Implications of Using Semicolons</a></h3>
+<ul>
+<li><strong>Encourages Deliberate Writing:</strong> Like a period in a sentence, semicolons
+encourage the writer to consider the end of an action or intent.</li>
+<li><strong>Clear Statement Boundaries:</strong> Semicolons explicitly mark the end of a
+statement, helping both the compiler and the programmer to distinguish one
+instruction from another.</li>
+<li><strong>Facilitates Multiple Statements Per Line:</strong> Semicolons allow multiple
+statements on a single line, which can be convenient but may also reduce
+readability if overused.</li>
+<li><strong>Parsing Simplicity:</strong> From an implementation standpoint, semicolons can
+simplify parsing by clearly delimiting statements.</li>
+</ul>
+<h3 id="implications-of-omitting-semicolons"><a class="header" href="#implications-of-omitting-semicolons">Implications of Omitting Semicolons</a></h3>
+<ul>
+<li><strong>Cleaner Syntax:</strong> Languages like Python and Lua omit semicolons by default,
+resulting in cleaner, less cluttered code.</li>
+<li><strong>Reliance on Line Breaks:</strong> The parser must rely on line breaks or
+indentation to determine statement boundaries, which can sometimes lead to
+ambiguity or subtle bugs.</li>
+<li><strong>Potential for Ambiguity:</strong> Without explicit terminators, certain constructs
+might become harder to parse or require additional rules.</li>
+</ul>
+<h3 id="choosing-a-semicolon-policy-for-flavor"><a class="header" href="#choosing-a-semicolon-policy-for-flavor">Choosing a Semicolon Policy for Flavor</a></h3>
+<p>For Flavor, using semicolons as statement terminators strikes a balance between
+clarity and expressiveness. It signals the end of an intention clearly while
+allowing flexibility in formatting. However, we may consider omitting semicolons
+in certain contexts (like the last statement in a block) to reduce verbosity—a
+feature common in modern languages.</p>
+<h2 id="parentheses-when-are-they-necessary"><a class="header" href="#parentheses-when-are-they-necessary">Parentheses: When Are They Necessary?</a></h2>
+<p>Parentheses are traditionally used to enclose function parameters, but their
+usage can vary widely across languages.</p>
+<h3 id="functions-and-parentheses"><a class="header" href="#functions-and-parentheses">Functions and Parentheses</a></h3>
+<ul>
+<li><strong>Clarity of Invocation:</strong> Parentheses clearly distinguish function calls from
+variable references or other expressions.</li>
+<li><strong>Parameter Grouping:</strong> They group parameters and help the parser understand
+argument boundaries.</li>
+<li><strong>Optional Parentheses:</strong> Some languages (e.g., Lua) allow omitting
+parentheses for function calls with a single string or table argument, making
+code more concise.</li>
+</ul>
+<h3 id="statements-without-parentheses"><a class="header" href="#statements-without-parentheses">Statements Without Parentheses</a></h3>
+<p>Consider the <code>print</code> statement in languages like Lua, where parentheses are
+optional or omitted entirely. This can make simple statements feel more natural
+and less cluttered.
+Also, ensuring the absence of parentheses help differentiate function calls from
+statements.</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parentheses.flv</span></div>
+<pre><code class="language-lua">// function call
+fibonacci(10);
 
-impl Parser {
-    // Helper
-    fn current_tok(&amp;self) -&gt; &amp;Token {
-        &amp;self.tokens[self.pos]
-    }
-
-    // Helper
-    fn consume_tok(&amp;mut self) {
-        if self.pos &lt; self.tokens.len() - 1 {
-            self.pos += 1;
-        }
-    }
-
-    // Helper
-    fn expect_tok(&amp;mut self, expected: TokenName) -&gt; Result&lt;Token, String&gt; {
-        let tok = self.current_tok();
-
-        if tok.tok_name == expected {
-            let tok = tok.clone();
-            self.consume_tok();
-            Ok(tok)
-        } else {
-            Err(format!(
-                "Expected token {:?}, found {:?} ('{}')",
-                expected, tok.tok_name, tok.lexeme
-            ))
-        }
-    }
-
-    // Entry Point
-    pub fn parse_program(&amp;mut self) -&gt; Result&lt;Vec&lt;ASTNode&gt;, String&gt; {
-        let mut nodes = Vec::new();
-        while self.current_tok().tok_name != TokenName::Eof {
-            nodes.push(self.parse_statement()?);
-        }
-        Ok(nodes)
-    }
-}</code></pre>
-<p>These helper methods allow us to get the current token, consume it
-(shift the list starting point right one position), and to check the token with a given
-<code>TokenName</code>.</p>
-<p>Lastly, the <code>parse_program()</code> method will serve as an entry point for the
-parser.
-Notice the signature of the method which will return the vector of ASTs.</p>
-<p>Now for the fun stuff, we will need the collection of parser functions to handle
-the different elements of the grammar.<br />
-First off, the <code>parse_statement()</code> method which is responsible for the parsing
-of all the different statements we support in Flavor.</p>
-<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
-<pre><code class="language-rust no_run noplayground">fn parse_statement(&amp;mut self) -&gt; ParseProduction {
-    match self.current_tok().tok_name {
-        TokenName::Let =&gt; self.parse_let_statement(),
-        // TODO: aliasing, fn declaration, return statement, ecc...
-        _ =&gt; self.parse_expression_statement(),
-    }
-}</code></pre>
-<p>Currently we have little support yet, the <code>let</code> declaration is the first element
-in the list which would be followed by all the other statements.
-The default parsing will be <code>parse_expression_statement()</code> which is responsible
-for the handling of a statement as <code>3+4;</code>.</p>
-<blockquote>
-<p>Why do we need such statements without <em>side effects</em>? What are side effects?
-What is the difference between statement, expression and expression-statement?
-These are all topics which are discussed in chapter <a href="">TODO</a>.</p>
-</blockquote>
-<p>Let us now analyze the method for the parsing of let declarations
-(<code>parse_let_statement()</code>).
-This will serve as an example to understand how we can apply the grammar in the
-parser to check the tokens.
-We can describe the <code>let</code> statement as follows: <code>let identifier (':' identifier)? '=' &lt;expr&gt; ';'</code>.
-This means that we expect, in order:</p>
+// statement
+print "Hello World!";
+</code></pre>
+<p>This approach allows a statement to accept only a single expression as an
+argument. However, a problem arises when the statement requires multiple
+arguments<sup><a name="to-footnote-1"><a href="#footnote-1">1</a></a></sup>.</p>
+<p>For example, consider a dummy statement <code>foo</code> that needs two arguments. We can
+pass a tuple to keep the <em>single expression as arugment for statements</em> rule,
+resulting in the syntax <code>foo (arg1, arg2)</code>. Note that this is not a function
+call, but a statement using a tuple as its parameter.</p>
+<p>The syntax does not clearly distinguish between these two cases in such
+scenarios.<br />
+Should we keep this syntax as it is? Or, similar to Rust's approach, should we
+adopt an explicit notation to clearly differentiate these elements, like Rust
+does with macros using an exclamation mark (<code>print!(...)</code>)?</p>
+<h3 id="implications-for-flavor"><a class="header" href="#implications-for-flavor">Implications for Flavor</a></h3>
+<p>In Flavor, we propose requiring parentheses for function calls to maintain
+clarity and consistency, especially as functions become more complex. However,
+for certain built-in statements or commands like <code>print</code>, we may allow
+parentheses to be optional or omitted, enhancing code readability and fluency.</p>
+<div class="mdbook-callouts mdbook-callouts-note">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  note
+</p>
+<p>Currently, parentheses are expected only for function calls, not for
+statements.</p>
+</div>
+<h2 id="type-definitions-style-readability-and-power"><a class="header" href="#type-definitions-style-readability-and-power">Type Definitions: Style, Readability, and Power</a></h2>
+<p>When it comes to defining types in a programming language, the choices we make
+have a big impact on how the language <em>feels</em> to write and read. It’s not just
+about correctness or functionality — it’s about aesthetics, expressiveness, and
+the balance between simplicity and control.</p>
+<h3 id="aesthetics-what-should-type-definitions-look-like"><a class="header" href="#aesthetics-what-should-type-definitions-look-like">Aesthetics: What Should Type Definitions Look Like?</a></h3>
+<p>Imagine you’re writing code and need to specify the type of a variable or
+function parameter. How do you want that to <em>look</em>?</p>
+<ul>
+<li>Should it be verbose and explicit, like <code>int</code>, <code>float</code>, or <code>string</code> — simple,
+familiar words that almost feel like natural language?</li>
+<li>Or should it be more precise and low-level, like <code>i32</code>, <code>f64</code>, or <code>usize</code>,
+which convey exact size and behavior but might feel more intimidating or
+technical?</li>
+<li>Maybe a mix of both, where you can use simple names for everyday cases but
+also dive into detailed type specifications when you want?</li>
+</ul>
+<p>For example, consider these two snippets:</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">Typing Example</span></div>
+<pre><code class="language-rust no_run noplayground">let x: number = 10;
+let y: int = 10;
+let z: i32 = 10;</code></pre>
+<p>Both declare an integer variable, but the first feels more approachable and
+human-friendly, whereas the second gives you exact control over the integer’s
+size and representation.
+We could also use more general names like <code>number</code>, but this would require
+automatically converting between different types of numbers (such as floats,
+integers, and doubles) when performing operations.</p>
+<h3 id="naming-number-vs-int-float-vs-f32-f64-etc"><a class="header" href="#naming-number-vs-int-float-vs-f32-f64-etc">Naming: Number vs Int, Float vs f32, f64, etc.</a></h3>
+<p>The choice of type names influences readability and clarity:</p>
+<ul>
+<li><strong>Simple names</strong> like <code>number</code>, <code>int</code>, <code>float</code> are easy to understand and
+remember — great for beginners and quick coding.</li>
+<li><strong>Detailed names</strong> like <code>i32</code>, <code>u64</code>, <code>f64</code> provide precision, which is
+crucial when performance, memory layout, or interoperability matter.</li>
+</ul>
+<p>Some languages (like Python or JavaScript) lean heavily on simple, abstract type
+names, hiding low-level details. Others (like Rust or C) expose those details
+upfront.</p>
+<h3 id="learning-from-other-languages"><a class="header" href="#learning-from-other-languages">Learning from Other Languages</a></h3>
+<ul>
+<li><strong>Rust</strong> uses explicit low-level types like <code>i32</code> and <code>f64</code>, which can be
+daunting for beginners but powerful for systems programming.</li>
+<li><strong>Go</strong> uses simple names like <code>int</code> and <code>float64</code>, balancing ease of use with
+precision.</li>
+<li><strong>TypeScript</strong> offers a rich type system with friendly names and advanced
+features, making it approachable yet expressive.</li>
+<li><strong>Python</strong> largely hides type details but has recently introduced optional
+typing with simple syntax to improve readability.</li>
+</ul>
+<h3 id="function-types"><a class="header" href="#function-types">Function Types</a></h3>
+<p>Functions are a core building block in any programming language, and how we define their types directly affects both readability and expressiveness. In Flavor, we want function type definitions to be clear, approachable, and consistent with the overall style of the language.</p>
+<p>A typical function definition in Flavor looks like this:</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">flavor</span></div>
+<pre><code class="language-typescript">fn foo(a: int, b: int) -&gt; int {
+  return a + b;
+}
+</code></pre>
+<p>With this notation, the user is able to statically describe the return type of
+the function as well as the parameters type.
+This will allow us to specify static checks and to provide rich error messages
+to the user.</p>
+<h3 id="wrapping-up"><a class="header" href="#wrapping-up">Wrapping Up</a></h3>
+<p>Type definitions are more than just syntax — they set the tone for how
+approachable or powerful the language feels.</p>
+<p>In the next sections, we’ll explore how these type definitions tie into the
+language’s semantics and implementation, and how they influence error handling,
+inference, and more.</p>
+<hr />
+<h1 id="implementation-choices-memory-management-scoping-and-error-handling"><a class="header" href="#implementation-choices-memory-management-scoping-and-error-handling">Implementation Choices: Memory Management, Scoping, and Error Handling</a></h1>
+<p>Now that we have explored the language’s syntax and design style, it’s time to
+consider some of the fundamental decisions that affect how Flavor will actually
+<em>work</em> under the hood. Since Flavor is intended to be an interpreted language
+(in its first incarnation at least), these choices shape the interpreter’s
+behavior and the programmer’s experience.</p>
+<p>This section does not dive into code specifics but focuses on the concepts,
+trade-offs, and implications of different implementation strategies. The goal is
+to give you a clear understanding of the possibilities so you can confidently
+explore or even implement any of them yourself.</p>
+<h2 id="memory-management"><a class="header" href="#memory-management">Memory Management</a></h2>
+<p>How a language manages memory is one of the most important design and
+implementation decisions. It affects performance, safety, ease of use, and
+complexity.</p>
+<div class="mdbook-callouts mdbook-callouts-note">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  note
+</p>
+<p>Explicit memory management policies may not be necessary in interpreted
+languages. However, since Flavor is designed as a learning platform rather than
+a practical programming language, we will include these policies in some form.</p>
+</div>
+<h3 id="manual-memory-management"><a class="header" href="#manual-memory-management">Manual Memory Management</a></h3>
+<ul>
+<li>The programmer is responsible for allocating and freeing memory explicitly.</li>
+<li>Offers fine-grained control and potentially very efficient memory use.</li>
+<li>However, it is error-prone: mistakes can cause memory leaks, dangling
+pointers, or crashes.</li>
+<li>Languages like C use this model.</li>
+</ul>
+<h3 id="garbage-collection-gc"><a class="header" href="#garbage-collection-gc">Garbage Collection (GC)</a></h3>
+<ul>
+<li>The interpreter automatically tracks and frees memory that is no longer in
+use.</li>
+<li>Removes the burden of manual memory management from the programmer, reducing
+certain classes of bugs.</li>
+<li>GC can introduce pauses or overhead, which might affect performance or
+responsiveness.</li>
+<li>Languages like Java, JavaScript, and Python use GC.</li>
+</ul>
+<p>There are different GC strategies:</p>
+<ul>
+<li><strong><a href="https://en.wikipedia.org/wiki/Tracing_garbage_collection">Tracing GC</a>:</strong> Periodically scans memory to find unreachable objects.</li>
+<li><strong><a href="https://en.wikipedia.org/wiki/Reference_counting">Reference Counting</a>:</strong> Keeps counters for references and frees objects when
+count reaches zero.</li>
+</ul>
+<h3 id="stack-allocation"><a class="header" href="#stack-allocation">Stack Allocation</a></h3>
+<ul>
+<li>Some values (like local variables) can be allocated on a stack with automatic
+cleanup when scope ends.</li>
+<li>This is fast and simple but limited to values with clear
+<a href="https://en.wikipedia.org/wiki/Object_lifetime">lifetimes</a>.</li>
+<li>Often combined with GC or manual management for other cases.</li>
+</ul>
+<h3 id="implications-for-flavor-1"><a class="header" href="#implications-for-flavor-1">Implications for Flavor</a></h3>
+<p>Choosing <strong>garbage collection</strong> (GC) simplifies programming for the user and
+fits well with the flexibility of an interpreted language. Among GC techniques,
+reference counting is easier to implement but has difficulties handling cyclical
+references.<br />
+Manual memory management offers powerful control but significantly
+increases complexity on the user hand and risk, making it less suitable for a
+language aimed at learning. However it is a fairly easy system to implement in
+its most basic form.<br />
+Meanwhile, stack allocation can improve performance for
+local variables but requires careful tracking of variable lifetimes to avoid
+errors.</p>
+<h2 id="scoping"><a class="header" href="#scoping">Scoping</a></h2>
+<p>Scoping rules determine how and where variables and functions are visible and
+accessible, shaping both language semantics and implementation complexity.</p>
+<h3 id="lexical-static-scoping"><a class="header" href="#lexical-static-scoping">Lexical (Static) Scoping</a></h3>
+<ul>
+<li>The scope of variables is determined by their position in the source code.</li>
+<li>Most modern languages use lexical scoping.</li>
+<li>Enables predictable bindings and supports closures (functions capturing
+variables from their defining environment).</li>
+<li>Easier to reason about and implement in an interpreter.</li>
+</ul>
+<h3 id="dynamic-scoping"><a class="header" href="#dynamic-scoping">Dynamic Scoping</a></h3>
+<ul>
+<li>Variable bindings are resolved by the call stack at runtime.</li>
+<li>Can be more flexible but harder to predict and debug.</li>
+<li>Rarely used in modern mainstream languages.</li>
+</ul>
+<h3 id="nested-scopes-and-closures"><a class="header" href="#nested-scopes-and-closures">Nested Scopes and Closures</a></h3>
+<ul>
+<li>Supporting nested scopes allows functions to be defined inside other
+functions, capturing variables from outer scopes.</li>
+<li>Closures are powerful for abstraction and functional programming styles.</li>
+<li>Implementing closures requires the interpreter to maintain environments that
+outlive their original call frames.</li>
+</ul>
+<h3 id="implications-for-flavor-2"><a class="header" href="#implications-for-flavor-2">Implications for Flavor</a></h3>
 <ol>
-<li>the <code>let</code> token</li>
-<li>the <code>identifier</code> token</li>
-<li><em>optionally</em>, the <code>colon</code> followed by another identifier</li>
-<li>the equal sign '=' token</li>
-<li>a collection of tokens composing an expression</li>
-<li>the semicolon <code>;</code> token</li>
+<li>Flavor adopts lexical (static) scoping, meaning that the visibility of
+variables is determined by their position in the source code rather than the
+call stack at runtime. This ensures that variables declared inside a block are
+only accessible within that block and any nested inner blocks.</li>
+<li>This scoping model enforces clear boundaries for variable visibility,
+preventing accidental access to variables that are out of scope. For example,
+the following code produces an error because <code>y</code> is used outside its declaring
+block:</li>
 </ol>
-<!-- FIX: the type should be its own token?? -->
-<p>To achieve this pattern of checks we implement the following code:</p>
-<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
-<pre><code class="language-rust no_run noplayground">fn parse_let_statement(&amp;mut self) -&gt; Result&lt;ASTNode, String&gt; {
-    self.expect_tok(TokenName::Let)?;
-    let id_tok = self.expect_tok(TokenName::Identifier)?;
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">Scoping Example</span></div>
+<pre><code class="language-typescript">let x = 4;
 
-    let var_type: Option&lt;String&gt; = if self.current_tok().tok_name == TokenName::Colon {
-        self.consume_tok();
-        Some(self.parse_type()?)
-    } else {
-        None
-    };
+if x &gt; 2 {
+  let y = 5;
+  y;
+}
 
-    self.expect_tok(TokenName::Assign)?;
-    let expr = self.parse_expression()?;
-    self.expect_tok(TokenName::Semicolon)?;
-
-    // Return of the AST
-    Ok(ASTNode::LetDeclaration {
-        identifier: id_tok.lexeme,
-        var_type,
-        expr: Box::new(expr),
-    })
-}</code></pre>
-<p>Notice how the required tokens are checked in sequence.
-The usage of the <code>?</code> is useful due to the return type of the parse functions.
-The functions will return a <code>Result</code> type; if an error is present, the <code>?</code> symbol
-allows to escalate it to the caller.</p>
-<blockquote>
-<p>For those of you that are reimplementing Flavor in other languages, this
-escalation system can be achieved by using <code>throw</code> and <code>try-catch</code> in Java for
-example.<br />
-Custom made solutions are also possible if not encouraged.
-We will experiment with a custom error handling and report system later in this
-book.</p>
-</blockquote>
-<p>In this definition, the initialization value is required, while the declaration type
-is optional.
-This is shown in the implementation where the presence of the type is checked using an <code>if</code> statement,
-and the <code>var_type</code> variable is of type <code>Option</code>, meaning it can be <code>None</code>.</p>
-<div class="mdbook-callouts mdbook-callouts-important">
-<p class="mdbook-callouts-title">
-  <span class="mdbook-callouts-icon"></span>
-  important
-</p>
-<p>The <code>expect_tok()</code> method also returns a <code>Result</code>.
-That is so that the method will return the token if the check is positive and
-a structured error message if the check is negative.
-Having the method return a token allows for the caller to use it to compose
-the node of the AST.</p>
-</div>
-<p>In this example, the <code>id_tok</code> is stored with the return value of the
-<code>expect_tok()</code> after checking if the token is an identifier.
-The <code>id_tok</code> variable is then used to compile the <code>LetDeclaration</code> ASTNode.</p>
-<p>The final important element in this example is the call to the <code>parse_expression()</code> method.
-As we said prior, the grammar expects an expression after the <code>=</code> symbol.
-The implementation will represent this with the calling of the
-<code>parse_expression()</code> method.<br />
-To make it absolutely clear, the structure of the <code>parse_expression()</code> method
-will reseamble the on in <code>parse_let_statement()</code>.
-Also checking the token sequence and calling other parse methods as necessary to
-then compose an AST.
-The AST obtained from the <code>parse_expression()</code> will be then used in the
-<code>LetDeclaration</code> AST node in the example.</p>
-<h3 id="operator-precedence"><a class="header" href="#operator-precedence">Operator Precedence</a></h3>
-<p>We have talked about <em>precedence</em> in an informal way.
-In the context of <strong>operations</strong>, the precedence is a value to represent the
-ordering in which to execute said operations.</p>
-<p>We represent this ordering with the following function.</p>
-<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
-<pre><code class="language-rust no_run noplayground">// ... Above
-fn get_precedence(token: &amp;Token) -&gt; Option&lt;u8&gt; {
-    match token.tok_name {
-        TokenName::Plus | TokenName::Minus =&gt; Some(10),
-        TokenName::Times | TokenName::Div | TokenName::Percent =&gt; Some(20),
-        TokenName::Eq | TokenName::NotEq =&gt; Some(5),
-        _ =&gt; None,
-    }
-}</code></pre>
-<p>With this system we can associate to each operation an <strong>priority value</strong> and we
-can then parse those operations accordingly.</p>
-<p>The function responsible for the parsing is the following.</p>
-<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
-<pre><code class="language-rust no_run noplayground">fn parse_binary_expression(&amp;mut self, min_prec: u8) -&gt; ParseProduction {
-    let mut left = self.parse_postfix_expression()?;
-
-    while let Some(prec) = Self::get_precedence(self.current_tok()) {
-        if prec &lt; min_prec {
-            break;
-        }
-
-        let op_tok = self.current_tok().clone();
-        self.consume_tok();
-
-        let right = self.parse_binary_expression(prec + 1)?;
-        left = ASTNode::BinaryExpression {
-            left: Box::new(left),
-            operator: op_tok.lexeme,
-            right: Box::new(right),
-        }
-    }
-    Ok(left)
-}</code></pre>
-<p>The important detail in this function are the usage of the recursion calling the
-<code>parse_binary_expression()</code> method itself for the right operand of the
-operation; and the usage of a precedence check to correctly stop the evaluation
-of the operations.
-The recursive call of the method will increase the precedence value to ensure
-that the right child of an operation node is always of an higher precedence.</p>
-<p>We will leave out all the parsing methods.
-Just one more will be included in the book.
-Specifically, the parsing method responsible for the parsing of terminal nodes.</p>
-<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parser.rs</span></div>
-<pre><code class="language-rust no_run noplayground">fn parse_primary(&amp;mut self) -&gt; ParseProduction {
-    let tok = self.current_tok().clone();
-    match tok.tok_name {
-        TokenName::Number =&gt; {
-            self.consume_tok();
-            Ok(ASTNode::NumberLiteral(tok.lexeme))
-        }
-        TokenName::Identifier =&gt; {
-            self.consume_tok();
-            Ok(ASTNode::Identifier(tok.lexeme))
-        }
-        TokenName::LPar =&gt; {
-            self.consume_tok();
-            let expr = self.parse_expression()?;
-            self.expect_tok(TokenName::RPar)?;
-            Ok(expr)
-        }
-        _ =&gt; Err(format!("Unexpected token in expression: {:?}", tok)),
-    }
-}</code></pre>
-<p>Here the parsing is simpler; the token gets checked.
-If it is a terminal token, then the corresponding AST node is returned.
-If, instead, it is a parenthesis, then we recursively call the
-<code>parse_expression()</code> method restarting the cycle.</p>
+print y; // Error: y is not defined here
+</code></pre>
+<ol start="3">
+<li>By making variable lifetimes explicit and predictable, lexical scoping
+improves both the language’s design and the programmer’s experience. Errors
+caused by undefined or shadowed variables can be detected early, helping users
+write safer and more maintainable code.</li>
+<li>Nested scopes and variable shadowing are naturally supported. Inner blocks
+can declare variables with the same name as outer ones, temporarily
+overriding the outer binding within that inner scope. This adds flexibility
+while maintaining clarity.</li>
+</ol>
+<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
+<p>How a language handles errors influences code robustness and developer
+experience.</p>
+<h3 id="compile-time-vs-runtime-errors"><a class="header" href="#compile-time-vs-runtime-errors">Compile-Time vs Runtime Errors</a></h3>
+<ul>
+<li><strong>Compile-time errors</strong> catch problems before the program runs, improving safety
+but requiring more upfront checks.</li>
+<li><strong>Runtime errors</strong> occur during execution and must be handled gracefully to avoid
+crashes.</li>
+</ul>
+<h3 id="exception-handling"><a class="header" href="#exception-handling">Exception Handling</a></h3>
+<ul>
+<li>Languages often provide constructs like <code>try/catch</code> to handle exceptions.</li>
+<li>Enables separating error-handling code from normal logic but can complicate
+control flow.</li>
+</ul>
+<h3 id="result-types-and-explicit-handling"><a class="header" href="#result-types-and-explicit-handling">Result Types and Explicit Handling</a></h3>
+<ul>
+<li>Some languages (like Rust) use types like <code>Result</code> to represent success or
+failure explicitly.</li>
+<li>Encourages handling errors explicitly but can add verbosity.</li>
+</ul>
+<h3 id="implications-for-flavor-3"><a class="header" href="#implications-for-flavor-3">Implications for Flavor</a></h3>
+<p>TODO...</p>
+<h2 id="additional-style-decisions"><a class="header" href="#additional-style-decisions">Additional Style Decisions</a></h2>
+<p>Beyond semicolons and parentheses, other stylistic choices also shape the
+language’s character:</p>
+<h3 id="1-block-delimiters"><a class="header" href="#1-block-delimiters">1. <strong>Block Delimiters</strong></a></h3>
+<ul>
+<li>Using braces <code>{}</code> to delimit blocks is familiar and visually clear.</li>
+<li>Alternatives include indentation-based blocks (like Python), which reduce
+punctuation but complicate parsing.</li>
+</ul>
+<hr />
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>Small syntactic and stylistic choices have outsized effects on the language’s
+usability and identity. By carefully considering semicolon usage, parentheses,
+block delimiters, keywords, operators, and type annotations, we hope to better
+streamline the implementation process.</p>
+<p>Each of these implementation choices—memory management, scoping, and error
+handling—comes with trade-offs that affect performance, safety, ease of use, and
+complexity. There is no one-size-fits-all solution, and part of the learning
+journey is understanding these trade-offs deeply.</p>
+<p>By exploring these options thoroughly, anyone interested in programming
+language development can choose the path that best fits their goals, whether for
+Flavor or any other language project.</p>
+<p>In the following chapters, we will explore these decisions in more detail and
+see how they influence both the language’s design and its implementation.<p><hr/></p>
+<p><a name="footnote-1"><a href="#to-footnote-1">1</a></a>: Calling them arguments is improper, but the term provides a
+good intuitive understanding of the concept.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../implementation/lexer.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../design/first_design_imagin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
+                            <a rel="next prefetch" href="../implementation/implementation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -742,10 +783,13 @@ If, instead, it is a parenthesis, then we recursively call the
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../implementation/lexer.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../design/first_design_imagin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
+                    <a rel="next prefetch" href="../implementation/implementation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

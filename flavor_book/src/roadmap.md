@@ -1,12 +1,24 @@
-# Roadmap
+# Roadmap and TODOs
 
-In this section you will find the **Roadmap** of the project.
-The steps we took to produce the language will be laid out here.
-Being completely honest, this page is here because it is primarly useful to me.
-If you find this section to be incomplete, it is because it probably is.
+## Roadmap
 
-- [x] Language design and aesthetics definition
-- [ ] Implementation description
+- [ ] Language Development
+  - [ ] Overview
+  - [ ] Syntax
+  - [ ] Semantics
+  - [ ] Grammar
+  - [ ] Abstract Syntax Tree
+  - [ ] Lexing
+  - [ ] Parsing
+  - [ ] Typing System
+  - [ ] ...
+- [ ] Flavor Design
+- [ ] Implementation
+  - [ ] Overview
+  - [ ] Project Structure
   - [ ] Lexer
   - [ ] Parser
+  - [ ] TypeChecker
   - [ ] ...
+
+## TODOs

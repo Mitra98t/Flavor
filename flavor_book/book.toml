@@ -9,3 +9,4 @@ build-dir = "../docs/"
 
 [preprocessor.callouts]
 [preprocessor.codename]
+[preprocessor.footnote]

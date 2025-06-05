@@ -41,6 +41,17 @@
         <script src="toc.js"></script>
     </head>
     <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
     <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
@@ -118,7 +129,7 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -405,26 +416,53 @@ span.codeblock_filename_inner {
   --color-pink: #d53984;
 }
 </style>
-<h1 id="roadmap"><a class="header" href="#roadmap">Roadmap</a></h1>
-<p>In this section you will find the <strong>Roadmap</strong> of the project.
-The steps we took to produce the language will be laid out here.
-Being completely honest, this page is here because it is primarly useful to me.
-If you find this section to be incomplete, it is because it probably is.</p>
+<h1 id="roadmap-and-todos"><a class="header" href="#roadmap-and-todos">Roadmap and TODOs</a></h1>
+<h2 id="roadmap"><a class="header" href="#roadmap">Roadmap</a></h2>
 <ul>
-<li><input disabled="" type="checkbox" checked=""/>
-Language design and aesthetics definition</li>
 <li><input disabled="" type="checkbox"/>
-Implementation description
+Language Development
 <ul>
+<li><input disabled="" type="checkbox"/>
+Overview</li>
+<li><input disabled="" type="checkbox"/>
+Syntax</li>
+<li><input disabled="" type="checkbox"/>
+Semantics</li>
+<li><input disabled="" type="checkbox"/>
+Grammar</li>
+<li><input disabled="" type="checkbox"/>
+Abstract Syntax Tree</li>
+<li><input disabled="" type="checkbox"/>
+Lexing</li>
+<li><input disabled="" type="checkbox"/>
+Parsing</li>
+<li><input disabled="" type="checkbox"/>
+Typing System</li>
+<li><input disabled="" type="checkbox"/>
+...</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"/>
+Flavor Design</li>
+<li><input disabled="" type="checkbox"/>
+Implementation
+<ul>
+<li><input disabled="" type="checkbox"/>
+Overview</li>
+<li><input disabled="" type="checkbox"/>
+Project Structure</li>
 <li><input disabled="" type="checkbox"/>
 Lexer</li>
 <li><input disabled="" type="checkbox"/>
 Parser</li>
 <li><input disabled="" type="checkbox"/>
+TypeChecker</li>
+<li><input disabled="" type="checkbox"/>
 ...</li>
 </ul>
 </li>
 </ul>
+<h2 id="todos"><a class="header" href="#todos">TODOs</a></h2>
 
                     </main>
 
@@ -434,7 +472,7 @@ Parser</li>
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="design_of_the_language.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="language_development/language_development.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -448,7 +486,7 @@ Parser</li>
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="design_of_the_language.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="language_development/language_development.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Flavor, Imagining the First Design - Flavor</title>
+        <title>First Time imagining the Language - Flavor</title>
 
 
         <!-- Custom HTML head -->
@@ -12,35 +12,46 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
     <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
@@ -91,7 +102,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -118,7 +129,7 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -126,7 +137,7 @@
                     <h1 class="menu-title">Flavor</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -406,39 +417,35 @@ span.codeblock_filename_inner {
 }
 </style>
 <h1 id="flavor-imagining-the-first-design"><a class="header" href="#flavor-imagining-the-first-design">Flavor Imagining the First Design</a></h1>
-<p>The aim of this chapter is to produce an overview of the design of Flavor.
-We will <strong>not</strong> dive into the implementation details or choices yet.
-Rather, we will imagine what we want Flavor to look like.</p>
+<p>The aim of this chapter is to provide an overview of the design of Flavor. We
+will <strong>not</strong> dive into implementation details or choices yet. Rather, we will
+imagine what we want Flavor to look like.</p>
 <p><strong>Disclaimer</strong></p>
-<p>This chapter is not intended to show the syntax and semantics of Flavor.
-We are just imagining the language proposing ideas and discussing them.</p>
+<p>This chapter is not intended to present the final syntax and semantics of
+Flavor. We are simply imagining the language, proposing ideas, and discussing
+them.</p>
 <div class="mdbook-callouts mdbook-callouts-note">
 <p class="mdbook-callouts-title">
   <span class="mdbook-callouts-icon"></span>
-  note
+  i find this imaginative step very useful. if, while designing, we
 </p>
-<p>I find this imaginative step quite useful.
-I mean, if while designing we find a particular element to be ugly or unpleasant
-to write, why bother including it in the implementation.
-Without this step, finding those elements would be more difficult.
-Even on the other hand, spending time imagining the language could be a good way
-to explore possible features and content to add to the language.
-That being said, the last thing I want is for this project to get out of hand
-with the quantity of features.
-Each one of those will need to be explored and discussed to assess the
-feasibility and the reasons behind it.
-If these discussions produce positive expectations, then we will try and
-implement the thing.</p>
+<p>find a particular element ugly or unpleasant to write, why include it?
+Without this step, identifying such elements would be more difficult. On the
+other hand, spending time imagining the language is a great way to explore
+possible features and additions. That said, the last thing I want is for this
+project to become overwhelmed with too many features. Each proposed feature
+will need to be explored and discussed to assess its feasibility and
+rationale. If these discussions produce positive expectations, we will try to
+implement the feature.</p>
 </div>
 <h2 id="first-syntax-creation"><a class="header" href="#first-syntax-creation">First Syntax Creation</a></h2>
-<p>I will leave the following text and code unchanged for the remainder of the book
-creation.
-For context, I wrote this stuff without much thought during the first design
-phases.
-My intention in keeping it as is, basically without review, is to show the first
-ever ideas that went into the language aesthetics.
-The consequences of this first design are discussed in the next section.</p>
-<p>In the following piece of code we will explore the syntax for Flavor.</p>
+<p>I will leave the following text and code unchanged for the remainder of the
+book's creation process. For context, I wrote this content without much thought
+during the initial design phases. My intention in keeping it as is, basically
+without review, is to show the <em>very first</em> ideas that shaped the language's
+aesthetics. The consequences of this initial design are discussed in the next
+section.</p>
+<p>In the following code snippet, we explore the syntax for Flavor.</p>
 <div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">example.flv</span></div>
 <pre><code class="language-typescript">// variable declaration with explicit type
 let x: int = 10;
@@ -446,25 +453,24 @@ let x: int = 10;
 // variable declaration with implicit type
 let y = 20; // implicitly int
 
-// implicit casting
 // TODO: check if we want implicit casting
+// implicit casting
 20 + 20.0 // int + float
 
-// Parentheses or no parentheses
 print x;
 
 if x &gt; 2 {
     // code...
-}
-else {
+} else
+{
     // code...
 }
 
-fn is_even (a: int) -&gt; int {
+fn is_even (a: int) -&gt; bool {
     return a % 2 == 0;
 }
 
-let lambda: int -&gt; void = &lt;x:int&gt; {
+let lambda: int -&gt; nothing = &lt;x&gt; {
     print x;
 };
 
@@ -473,8 +479,7 @@ alias function fn;
 function fibonacci (x:int) -&gt; int {
     if x == 1 || x == 2 {
         return 1;
-    }
-    else {
+    } else {
         return fibonacci(x-1) + fibonacci(x-2);
     };
 }
@@ -482,30 +487,27 @@ function fibonacci (x:int) -&gt; int {
 let fibonacci_lambda = &lt;x:int&gt; -&gt; int { // fibonacci_lambda: &lt;int&gt; -&gt; int
     if x == 1 || x == 2 {
         return 1;
-    }
-    else {
-        return fibonacci(x-1) + fibonacci(x-2);
+    } else {
+        return fibonacci_lambda(x-1) + fibonacci_lambda(x-2);
     };
-}
-
+};
 </code></pre>
-<p>Just by looking at this code, it is apparent that there are a lot of considerations to make.</p>
-<h2 id="design-choices-and-reasons"><a class="header" href="#design-choices-and-reasons">Design choices and reasons</a></h2>
-<p>When discussing the aesthetic choices behind Flavor I will focus on
+<p>Just by looking at this code, it is clear that many considerations need to be
+made.</p>
+<h2 id="design-choices-and-reasons"><a class="header" href="#design-choices-and-reasons">Design Choices and Reasons</a></h2>
+<p>When discussing the aesthetic choices behind Flavor, I will focus on
 <strong>consistency</strong>.</p>
 <blockquote>
-<p>The language is <strong>consistent</strong> if its behavior and syntax can be understood
-without needing to be explicitly taught.<br />
-For example, if we always use <code>( )</code> to enclose parameters, <code>.</code> to access
-methods and properties and <code>[ ]</code> to access elements in lists or sets, then
-we naturally expect to access the second element of a tuple using <code>tuple[1]</code>,
-not <code>tuple(1)</code> or <code>tuple.1</code>.<br />
-This is what I mean by <strong>consistency</strong> in a programming language,
-and all definitions and choices we make should follow this principle.</p>
+<p>A language is <strong>consistent</strong> if its behavior and syntax can be understood
+without needing to be explicitly taught. For example, if we always use <code>( )</code>
+to enclose parameters, <code>.</code> to access methods and properties, and <code>[ ]</code> to
+access elements in lists or sets, then we naturally expect to access the
+second element of a tuple using <code>tuple[1]</code>, not <code>tuple(1)</code> or <code>tuple.1</code>. This
+is what I mean by <strong>consistency</strong> in a programming language, and all
+definitions and choices we make should follow this principle.</p>
 </blockquote>
-<p>Moreover, the syntax should be fluent and fun to write.
-To provide a practical example, let us consider a series of equivalent codes of
-various languages:</p>
+<p>Moreover, the syntax should be fluent and enjoyable to write. To provide a
+practical example, consider these equivalent codes from various languages:</p>
 <div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">java</span></div>
 <pre><code class="language-java">System.out.println("Hello World!");
 </code></pre>
@@ -517,68 +519,42 @@ various languages:</p>
 <div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">lua</span></div>
 <pre><code class="language-lua">print "Hello World!"
 </code></pre>
-<p>All these codes perform the same task: a simple console print.<br />
-As you can see, there are both simpler and more complex ways of writing this instruction.
-<em>Is there a best way to write the print command?</em><br />
-I certainly can't say that one is absolutely better than the others; however, I do have personal preferences.
-I like using the <code>!</code> to indicate a macro in the Rust example (<code>println!("...");</code>),
-because it immediately clarifies what is being used (macro vs function call).
-But I also find the simplicity of Lua (<code>print "..."</code>) very appealing.
-I'm confident that for <strong>Flavor</strong> we will avoid taking inspiration from heavy languages like Java.</p>
-<h3 id="semicolons"><a class="header" href="#semicolons">Semicolons</a></h3>
-<p>First of all the usage of the semicolons <code>;</code>.<br />
-I say that using a semicolon at the end of the line feels akin to the usage of a period at the end of a sentence.<br />
-It incentivizes one to take a moment and reflect.
-Furthermore, the usage of the semicolon represents the end of an action, the end
-of an intention described through code.
-Not only that, but there is also the fact that the semicolon can convey
-semantic information.
-The presence of the semicolon might indicate that the operation to its left is a <strong>statement</strong>
-(do not worry, we will get into what that means later in
-this book); while its absence could indicate an <strong>expression</strong>.</p>
-<h3 id="parentheses"><a class="header" href="#parentheses">Parentheses</a></h3>
-<p>To tackle the quetion of <em>parentheses or no parentheses</em>, we have to recognize
-that we can use the parentheses to convey specific semantical information.<br />
-We have a fair bit of freedom here.
-For instance, we might associate the absence of the parentheses with the
-<em>macros</em> (assuming we want to include them).</p>
-<p>Writing the code for the <em>Fibonacci Sequence</em> function (<em>see <a href="./design_of_the_language.html#first-syntax-creation">the code example</a></em>), I had to come up with
-the syntax for the typing of functions and for the definition of lambdas.<br />
-Looking at the code, I quite enjoy the use of the less than and greater than (<code>&lt; &gt;</code>) to
-enclose the parameters of the lambdas.
-Furthermore, that syntax can be reused for the type definition of functions.
-A lambda function's type, using this syntax, can be defined as <code>&lt;param_type&gt; -&gt; return_type</code>.
-However, I feel like we will need more practical testing to decide the usability
-evaluation of the <code>&lt; &gt;</code> symbols.</p>
+<p>All these codes perform the same task: a simple console print. As you can see,
+there are both simpler and more complex ways of writing this instruction.</p>
+<p><em>Is there a best way to write the print command?</em><br />
+I cannot say that one is absolutely better than the others; however, I do have
+personal preferences. I like using the <code>!</code> to indicate a macro in the Rust
+example (<code>println!("...");</code>), because it immediately clarifies what is being
+used (macro vs function call). But I also find the simplicity of Lua (<code>print "..."</code>) very appealing.<br />
+I'm confident that for <strong>Flavor</strong> we will avoid taking
+inspiration from heavy languages like Java.</p>
 <h3 id="aliasing"><a class="header" href="#aliasing">Aliasing</a></h3>
-<p>An interesting idea that came out while showing the syntax to a friend is the
-possibility to add aliases as <code>alias function fn</code>, possibly even adding multiple
-aliases at once like <code>alias [function, func] fn</code>.
-The result is the possibility for the customization of the language by the user
-itself.<br />
-I didn't think enough in the future to evaluate the consequences and
-implementation challenges for such system.
-We can postpone these elements to after we have a basic implementation.</p>
-<h2 id="design-ideas-wrap-up"><a class="header" href="#design-ideas-wrap-up">Design ideas wrap up</a></h2>
-<p>This step was intentionally messy, the idea was just to explore ideas.
-As of now, the only thing that I know I want to incorporate are:</p>
+<p>An interesting idea that came up while showing the syntax to a friend is the
+possibility to add aliases such as <code>alias function fn</code>, possibly even adding
+multiple aliases at once like <code>alias [function, func] fn</code>. This would allow
+users to customize the language themselves. I have not yet considered the
+consequences and implementation challenges of such a system. We can postpone
+these considerations until after we have a basic implementation.</p>
+<h2 id="design-ideas-wrap-up"><a class="header" href="#design-ideas-wrap-up">Design Ideas Wrap Up</a></h2>
+<p>This step was intentionally exploratory; the idea was just to generate ideas.
+As of now, the only things I know I want to incorporate are:</p>
 <ul>
 <li>some basic typing notation</li>
 <li>variable declaration</li>
 <li>functions and lambdas notation</li>
 </ul>
-<p>Hopefully that is enough to start having fun with the development.<br />
-In the next chapter we will explore the first step of the implementation.</p>
+<p>Hopefully, that is enough to start having fun with development. In the next
+chapter, we will explore the first step of the implementation.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="roadmap.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../design/design.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="implementation/implementation.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../design/language_features.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -588,11 +564,11 @@ In the next chapter we will explore the first step of the implementation.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="roadmap.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../design/design.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="implementation/implementation.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../design/language_features.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -607,13 +583,13 @@ In the next chapter we will explore the first step of the implementation.</p>
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

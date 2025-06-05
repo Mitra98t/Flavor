@@ -42,6 +42,17 @@
         <script src="toc.js"></script>
     </head>
     <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
     <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
@@ -119,7 +130,7 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -407,8 +418,15 @@ span.codeblock_filename_inner {
 }
 </style>
 <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>In this book, we will follow my attempt at building a simple programming
-language.
+<div class="mdbook-callouts mdbook-callouts-warning">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  warning
+</p>
+<p>Book rework in progress</p>
+</div>
+<p>In this book, we will follow my attempt at building a simple community driven programming
+language <a href="https://github.com/Mitra98t/Flavor">GitHub Repository</a>.
 It is not my first time attempting such a project, but it is the first time
 doing it in a structured way while sharing the process and the code.
 The other attempts were more of a learning experience; one time producing a
@@ -419,8 +437,8 @@ Moreover, I have never built a compiler, so this will be a new experience for
 me.</p>
 <p>To specify some things before we start:</p>
 <ul>
-<li>This project is not meant to be a learning resource, but rather a learning
-platform; the idea of sharing this experience is guided by the hope that it
+<li>This project is not meant to be a <em>learning resource</em>, but rather a <strong>learning
+platform</strong>; the idea of sharing this experience is guided by the hope that it
 will help others learn from my mistakes and successes.
 I also hope to learn from suggestions and critics along the way myself.</li>
 <li>This book will primarily show my reasoning process and the decisions I make
@@ -464,20 +482,29 @@ something useful in it.</p>
 experience, but is not necessarily an expert and, more importantly, who is
 quite new to the topic of programming languages.</p>
 <h2 id="how-to-read-this-book"><a class="header" href="#how-to-read-this-book">How to read this book</a></h2>
-<p>The book is structured as a sort of <em>diary</em> journaling the development of Flavor.
+<p>The book is structured as a sort of <em>diary</em> journaling the development of <em>Flavor</em>.<br />
 For that reason the chapter will not follow a logical structure, but instead
-will follow the production timeline.
-This means that we can go back to describing the design of the language at any moment
-during development to accurately follow my steps.
-The implementation on the other hand will be structured based on the code
-itself; the chapter related to the <strong><a href="./implementation/lexer.html">Lexer</a></strong>, for instance, will describe the lexer's
-implementation mimicking the <em>wiki</em> of a project.<br />
-To reiterate, the <a href="./implementation/implementation.html">implementation</a> section will be structured and organized
-logically, while the rest of the book will follow the development timeline.</p>
-<p>If you are following the production of this book, then you might find the
-content of this paragraph rather unsatisfying.
-I will expand on this paragraph when I need to include a new notation in the
-book.</p>
+will follow the production timeline.</p>
+<p>To maintain a structured system in the book, it will be structured as follows:</p>
+<ul>
+<li><strong>Language Development</strong>
+<ul>
+<li>Describes language development concepts and ideas.</li>
+</ul>
+</li>
+<li><strong>Design</strong>
+<ul>
+<li>Outlines the design choices behind the Flavor language discussing
+their concequences and implications.</li>
+<li>Flavor features</li>
+</ul>
+</li>
+<li><strong>Implementation</strong>
+<ul>
+<li>Describes the implementation structure digging deep in the code.</li>
+</ul>
+</li>
+</ul>
 <p><strong>Look out for the call-outs!</strong>
 I will insert call-outs in the book, each one means something.</p>
 <div class="mdbook-callouts mdbook-callouts-note">
@@ -534,9 +561,7 @@ is not to create a production-ready, feature-rich and performant language; the
 goal is, instead, to face the challenges someone before me would have faced, and
 to come up with solutions that I am reasonably happy with.</p>
 <h2 id="flavor"><a class="header" href="#flavor">Flavor</a></h2>
-<p><strong>Flavor</strong>, the language protagonist of this book.<br />
-The name is not meant to represent anything; I just find it sci-fi enough so
-that is seems useful.</p>
+<p><strong>Flavor</strong>, the language protagonist of this book.</p>
 <p>Flavor will be an interpreted language (unless I manange to write a compiler)
 offering a strict typing system, type inference, function and lambdas, and --
 possibly -- classes and objects.
@@ -800,26 +825,608 @@ span.codeblock_filename_inner {
   --color-pink: #d53984;
 }
 </style>
-<h1 id="roadmap"><a class="header" href="#roadmap">Roadmap</a></h1>
-<p>In this section you will find the <strong>Roadmap</strong> of the project.
-The steps we took to produce the language will be laid out here.
-Being completely honest, this page is here because it is primarly useful to me.
-If you find this section to be incomplete, it is because it probably is.</p>
+<h1 id="roadmap-and-todos"><a class="header" href="#roadmap-and-todos">Roadmap and TODOs</a></h1>
+<h2 id="roadmap"><a class="header" href="#roadmap">Roadmap</a></h2>
 <ul>
-<li><input disabled="" type="checkbox" checked=""/>
-Language design and aesthetics definition</li>
 <li><input disabled="" type="checkbox"/>
-Implementation description
+Language Development
 <ul>
+<li><input disabled="" type="checkbox"/>
+Overview</li>
+<li><input disabled="" type="checkbox"/>
+Syntax</li>
+<li><input disabled="" type="checkbox"/>
+Semantics</li>
+<li><input disabled="" type="checkbox"/>
+Grammar</li>
+<li><input disabled="" type="checkbox"/>
+Abstract Syntax Tree</li>
+<li><input disabled="" type="checkbox"/>
+Lexing</li>
+<li><input disabled="" type="checkbox"/>
+Parsing</li>
+<li><input disabled="" type="checkbox"/>
+Typing System</li>
+<li><input disabled="" type="checkbox"/>
+...</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"/>
+Flavor Design</li>
+<li><input disabled="" type="checkbox"/>
+Implementation
+<ul>
+<li><input disabled="" type="checkbox"/>
+Overview</li>
+<li><input disabled="" type="checkbox"/>
+Project Structure</li>
 <li><input disabled="" type="checkbox"/>
 Lexer</li>
 <li><input disabled="" type="checkbox"/>
 Parser</li>
 <li><input disabled="" type="checkbox"/>
+TypeChecker</li>
+<li><input disabled="" type="checkbox"/>
 ...</li>
 </ul>
 </li>
 </ul>
+<h2 id="todos"><a class="header" href="#todos">TODOs</a></h2>
+<div style="break-before: page; page-break-before: always;"></div><style>
+div.codeblock_filename_container + pre {
+  margin-top: 0;
+}
+
+span.codeblock_filename_inner {
+  border-radius: 0.4rem 0.4rem 0 0;
+  padding: 0.6rem 1rem 0.6rem 1rem;
+  font-family: var(--mono-font) !important;
+  font-size: var(--code-font-size);
+}
+
+</style>
+<style>
+.mdbook-callouts {
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  /* border-left: 0.25em solid var(--mdbook-callouts-color); */
+  background: var(--mdbook-callouts-background);
+}
+
+.mdbook-callouts > *:first-child {
+  margin-top: 0;
+}
+
+.mdbook-callouts > *:last-child {
+  margin-bottom: 0;
+}
+
+.mdbook-callouts-title {
+  display: flex;
+  font-weight: 600;
+  align-items: center;
+  line-height: 1;
+  color: var(--mdbook-callouts-color);
+  text-transform: capitalize;
+}
+
+.mdbook-callouts-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.2em;
+  background-color: currentColor;
+  -webkit-mask: no-repeat center / 100%;
+  mask: no-repeat center / 100%;
+  -webkit-mask-image: var(--mdbook-callouts-icon);
+  mask-image: var(--mdbook-callouts-icon);
+}
+
+/* icons at: https://lucide.dev/icons/ */
+
+.mdbook-callouts-info {
+  --mdbook-callouts-color: rgb(var(--color-blue-rgb));
+  --mdbook-callouts-background: rgba(var(--color-blue-rgb), 0.1);
+  /* https://lucide.dev/icons/info */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWluZm8iPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDE2di00Ii8+PHBhdGggZD0iTTEyIDhoLjAxIi8+PC9zdmc+');
+}
+
+.mdbook-callouts-note {
+  --mdbook-callouts-color: rgb(var(--color-blue-rgb));
+  --mdbook-callouts-background: rgba(var(--color-blue-rgb), 0.1);
+  /* https://lucide.dev/icons/pencil */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXBlbmNpbCI+PHBhdGggZD0iTTE3IDNhMi44NSAyLjgzIDAgMSAxIDQgNEw3LjUgMjAuNSAyIDIybDEuNS01LjVaIi8+PHBhdGggZD0ibTE1IDUgNCA0Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-tip,
+.mdbook-callouts-hint {
+  --mdbook-callouts-color: rgb(var(--color-cyan-rgb));
+  --mdbook-callouts-background: rgba(var(--color-cyan-rgb), 0.1);
+  /* https://lucide.dev/icons/flame */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWZsYW1lIj48cGF0aCBkPSJNOC41IDE0LjVBMi41IDIuNSAwIDAgMCAxMSAxMmMwLTEuMzgtLjUtMi0xLTMtMS4wNzItMi4xNDMtLjIyNC00LjA1NCAyLTYgLjUgMi41IDIgNC45IDQgNi41IDIgMS42IDMgMy41IDMgNS41YTcgNyAwIDEgMS0xNCAwYzAtMS4xNTMuNDMzLTIuMjk0IDEtM2EyLjUgMi41IDAgMCAwIDIuNSAyLjV6Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-important {
+  --mdbook-callouts-color: rgb(var(--color-purple-rgb));
+  --mdbook-callouts-background: rgba(var(--color-purple-rgb), 0.1);
+  /* https://lucide.dev/icons/alert-circle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWFsZXJ0LWNpcmNsZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48bGluZSB4MT0iMTIiIHgyPSIxMiIgeTE9IjgiIHkyPSIxMiIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyLjAxIiB5MT0iMTYiIHkyPSIxNiIvPjwvc3ZnPg==');
+}
+
+.mdbook-callouts-success,
+.mdbook-callouts-check,
+.mdbook-callouts-done {
+  --mdbook-callouts-color: rgb(var(--color-green-rgb));
+  --mdbook-callouts-background: rgba(var(--color-green-rgb), 0.1);
+  /* https://lucide.dev/icons/check */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNoZWNrIj48cGF0aCBkPSJNMjAgNiA5IDE3bC01LTUiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-question,
+.mdbook-callouts-help,
+.mdbook-callouts-faq {
+  --mdbook-callouts-color: rgb(var(--color-pink-rgb));
+  --mdbook-callouts-background: rgba(var(--color-pink-rgb), 0.1);
+  /* https://lucide.dev/icons/help-circle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWhlbHAtY2lyY2xlIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik05LjA5IDlhMyAzIDAgMCAxIDUuODMgMWMwIDItMyAzLTMgMyIvPjxwYXRoIGQ9Ik0xMiAxN2guMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-warning,
+.mdbook-callouts-warn {
+  --mdbook-callouts-color: rgb(var(--color-orange-rgb));
+  --mdbook-callouts-background: rgba(var(--color-orange-rgb), 0.1);
+  /* https://lucide.dev/icons/alert-triangle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWFsZXJ0LXRyaWFuZ2xlIj48cGF0aCBkPSJtMjEuNzMgMTgtOC0xNGEyIDIgMCAwIDAtMy40OCAwbC04IDE0QTIgMiAwIDAgMCA0IDIxaDE2YTIgMiAwIDAgMCAxLjczLTNaIi8+PHBhdGggZD0iTTEyIDl2NCIvPjxwYXRoIGQ9Ik0xMiAxN2guMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-caution {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/shield-alert */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXNoaWVsZC1hbGVydCI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEwIi8+PHBhdGggZD0iTTEyIDh2NCIvPjxwYXRoIGQ9Ik0xMiAxNmguMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-failure,
+.mdbook-callouts-fail,
+.mdbook-callouts-missing {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/x */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXgiPjxwYXRoIGQ9Ik0xOCA2IDYgMTgiLz48cGF0aCBkPSJtNiA2IDEyIDEyIi8+PC9zdmc+');
+}
+
+.mdbook-callouts-error,
+.mdbook-callouts-danger {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/zap */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXphcCI+PHBvbHlnb24gcG9pbnRzPSIxMyAyIDMgMTQgMTIgMTQgMTEgMjIgMjEgMTAgMTIgMTAgMTMgMiIvPjwvc3ZnPg==');
+}
+
+.mdbook-callouts-bug {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/bug */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJ1ZyI+PHBhdGggZD0ibTggMiAxLjg4IDEuODgiLz48cGF0aCBkPSJNMTQuMTIgMy44OCAxNiAyIi8+PHBhdGggZD0iTTkgNy4xM3YtMWEzLjAwMyAzLjAwMyAwIDEgMSA2IDB2MSIvPjxwYXRoIGQ9Ik0xMiAyMGMtMy4zIDAtNi0yLjctNi02di0zYTQgNCAwIDAgMSA0LTRoNGE0IDQgMCAwIDEgNCA0djNjMCAzLjMtMi43IDYtNiA2Ii8+PHBhdGggZD0iTTEyIDIwdi05Ii8+PHBhdGggZD0iTTYuNTMgOUM0LjYgOC44IDMgNy4xIDMgNSIvPjxwYXRoIGQ9Ik02IDEzSDIiLz48cGF0aCBkPSJNMyAyMWMwLTIuMSAxLjctMy45IDMuOC00Ii8+PHBhdGggZD0iTTIwLjk3IDVjMCAyLjEtMS42IDMuOC0zLjUgNCIvPjxwYXRoIGQ9Ik0yMiAxM2gtNCIvPjxwYXRoIGQ9Ik0xNy4yIDE3YzIuMS4xIDMuOCAxLjkgMy44IDQiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-examples,
+.mdbook-callouts-example {
+  --mdbook-callouts-color: rgb(var(--color-purple-rgb));
+  --mdbook-callouts-background: rgba(var(--color-purple-rgb), 0.1);
+  /* https://lucide.dev/icons/list */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWxpc3QiPjxsaW5lIHgxPSI4IiB4Mj0iMjEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSI4IiB4Mj0iMjEiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjgiIHgyPSIyMSIgeTE9IjE4IiB5Mj0iMTgiLz48bGluZSB4MT0iMyIgeDI9IjMuMDEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSIzIiB4Mj0iMy4wMSIgeTE9IjEyIiB5Mj0iMTIiLz48bGluZSB4MT0iMyIgeDI9IjMuMDEiIHkxPSIxOCIgeTI9IjE4Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-quote {
+  --mdbook-callouts-color: rgb(158, 158, 158);
+  --mdbook-callouts-background: rgba(158, 158, 158, 0.1);
+  /* https://lucide.dev/icons/quote */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXF1b3RlIj48cGF0aCBkPSJNMyAyMWMzIDAgNy0xIDctOFY1YzAtMS4yNS0uNzU2LTIuMDE3LTItMkg0Yy0xLjI1IDAtMiAuNzUtMiAxLjk3MlYxMWMwIDEuMjUuNzUgMiAyIDIgMSAwIDEgMCAxIDF2MWMwIDEtMSAyLTIgMnMtMSAuMDA4LTEgMS4wMzFWMjBjMCAxIDAgMSAxIDF6Ii8+PHBhdGggZD0iTTE1IDIxYzMgMCA3LTEgNy04VjVjMC0xLjI1LS43NTctMi4wMTctMi0yaC00Yy0xLjI1IDAtMiAuNzUtMiAxLjk3MlYxMWMwIDEuMjUuNzUgMiAyIDJoLjc1YzAgMi4yNS4yNSA0LTIuNzUgNHYzYzAgMSAwIDEgMSAxeiIvPjwvc3ZnPg==');
+}
+
+
+.ayu {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.light {
+  --color-red-rgb: 233, 49, 71;
+  --color-red: #e93147;
+  --color-orange-rgb: 236, 117, 0;
+  --color-orange: #ec7500;
+  --color-yellow-rgb: 224, 172, 0;
+  --color-yellow: #e0ac00;
+  --color-green-rgb: 8, 185, 78;
+  --color-green: #08b94e;
+  --color-cyan-rgb: 0, 191, 188;
+  --color-cyan: #00bfbc;
+  --color-blue-rgb: 8, 109, 221;
+  --color-blue: #086ddd;
+  --color-purple-rgb: 120, 82, 238;
+  --color-purple: #7852ee;
+  --color-pink-rgb: 213, 57, 132;
+  --color-pink: #d53984;
+}
+
+.coal {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.navy {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.rust {
+  --color-red-rgb: 233, 49, 71;
+  --color-red: #e93147;
+  --color-orange-rgb: 236, 117, 0;
+  --color-orange: #ec7500;
+  --color-yellow-rgb: 224, 172, 0;
+  --color-yellow: #e0ac00;
+  --color-green-rgb: 8, 185, 78;
+  --color-green: #08b94e;
+  --color-cyan-rgb: 0, 191, 188;
+  --color-cyan: #00bfbc;
+  --color-blue-rgb: 8, 109, 221;
+  --color-blue: #086ddd;
+  --color-purple-rgb: 120, 82, 238;
+  --color-purple: #7852ee;
+  --color-pink-rgb: 213, 57, 132;
+  --color-pink: #d53984;
+}
+</style>
+<h1 id="language-development"><a class="header" href="#language-development">Language Development</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><style>
+div.codeblock_filename_container + pre {
+  margin-top: 0;
+}
+
+span.codeblock_filename_inner {
+  border-radius: 0.4rem 0.4rem 0 0;
+  padding: 0.6rem 1rem 0.6rem 1rem;
+  font-family: var(--mono-font) !important;
+  font-size: var(--code-font-size);
+}
+
+</style>
+<style>
+.mdbook-callouts {
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  /* border-left: 0.25em solid var(--mdbook-callouts-color); */
+  background: var(--mdbook-callouts-background);
+}
+
+.mdbook-callouts > *:first-child {
+  margin-top: 0;
+}
+
+.mdbook-callouts > *:last-child {
+  margin-bottom: 0;
+}
+
+.mdbook-callouts-title {
+  display: flex;
+  font-weight: 600;
+  align-items: center;
+  line-height: 1;
+  color: var(--mdbook-callouts-color);
+  text-transform: capitalize;
+}
+
+.mdbook-callouts-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.2em;
+  background-color: currentColor;
+  -webkit-mask: no-repeat center / 100%;
+  mask: no-repeat center / 100%;
+  -webkit-mask-image: var(--mdbook-callouts-icon);
+  mask-image: var(--mdbook-callouts-icon);
+}
+
+/* icons at: https://lucide.dev/icons/ */
+
+.mdbook-callouts-info {
+  --mdbook-callouts-color: rgb(var(--color-blue-rgb));
+  --mdbook-callouts-background: rgba(var(--color-blue-rgb), 0.1);
+  /* https://lucide.dev/icons/info */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWluZm8iPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDE2di00Ii8+PHBhdGggZD0iTTEyIDhoLjAxIi8+PC9zdmc+');
+}
+
+.mdbook-callouts-note {
+  --mdbook-callouts-color: rgb(var(--color-blue-rgb));
+  --mdbook-callouts-background: rgba(var(--color-blue-rgb), 0.1);
+  /* https://lucide.dev/icons/pencil */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXBlbmNpbCI+PHBhdGggZD0iTTE3IDNhMi44NSAyLjgzIDAgMSAxIDQgNEw3LjUgMjAuNSAyIDIybDEuNS01LjVaIi8+PHBhdGggZD0ibTE1IDUgNCA0Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-tip,
+.mdbook-callouts-hint {
+  --mdbook-callouts-color: rgb(var(--color-cyan-rgb));
+  --mdbook-callouts-background: rgba(var(--color-cyan-rgb), 0.1);
+  /* https://lucide.dev/icons/flame */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWZsYW1lIj48cGF0aCBkPSJNOC41IDE0LjVBMi41IDIuNSAwIDAgMCAxMSAxMmMwLTEuMzgtLjUtMi0xLTMtMS4wNzItMi4xNDMtLjIyNC00LjA1NCAyLTYgLjUgMi41IDIgNC45IDQgNi41IDIgMS42IDMgMy41IDMgNS41YTcgNyAwIDEgMS0xNCAwYzAtMS4xNTMuNDMzLTIuMjk0IDEtM2EyLjUgMi41IDAgMCAwIDIuNSAyLjV6Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-important {
+  --mdbook-callouts-color: rgb(var(--color-purple-rgb));
+  --mdbook-callouts-background: rgba(var(--color-purple-rgb), 0.1);
+  /* https://lucide.dev/icons/alert-circle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWFsZXJ0LWNpcmNsZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48bGluZSB4MT0iMTIiIHgyPSIxMiIgeTE9IjgiIHkyPSIxMiIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyLjAxIiB5MT0iMTYiIHkyPSIxNiIvPjwvc3ZnPg==');
+}
+
+.mdbook-callouts-success,
+.mdbook-callouts-check,
+.mdbook-callouts-done {
+  --mdbook-callouts-color: rgb(var(--color-green-rgb));
+  --mdbook-callouts-background: rgba(var(--color-green-rgb), 0.1);
+  /* https://lucide.dev/icons/check */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNoZWNrIj48cGF0aCBkPSJNMjAgNiA5IDE3bC01LTUiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-question,
+.mdbook-callouts-help,
+.mdbook-callouts-faq {
+  --mdbook-callouts-color: rgb(var(--color-pink-rgb));
+  --mdbook-callouts-background: rgba(var(--color-pink-rgb), 0.1);
+  /* https://lucide.dev/icons/help-circle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWhlbHAtY2lyY2xlIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik05LjA5IDlhMyAzIDAgMCAxIDUuODMgMWMwIDItMyAzLTMgMyIvPjxwYXRoIGQ9Ik0xMiAxN2guMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-warning,
+.mdbook-callouts-warn {
+  --mdbook-callouts-color: rgb(var(--color-orange-rgb));
+  --mdbook-callouts-background: rgba(var(--color-orange-rgb), 0.1);
+  /* https://lucide.dev/icons/alert-triangle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWFsZXJ0LXRyaWFuZ2xlIj48cGF0aCBkPSJtMjEuNzMgMTgtOC0xNGEyIDIgMCAwIDAtMy40OCAwbC04IDE0QTIgMiAwIDAgMCA0IDIxaDE2YTIgMiAwIDAgMCAxLjczLTNaIi8+PHBhdGggZD0iTTEyIDl2NCIvPjxwYXRoIGQ9Ik0xMiAxN2guMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-caution {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/shield-alert */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXNoaWVsZC1hbGVydCI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEwIi8+PHBhdGggZD0iTTEyIDh2NCIvPjxwYXRoIGQ9Ik0xMiAxNmguMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-failure,
+.mdbook-callouts-fail,
+.mdbook-callouts-missing {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/x */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXgiPjxwYXRoIGQ9Ik0xOCA2IDYgMTgiLz48cGF0aCBkPSJtNiA2IDEyIDEyIi8+PC9zdmc+');
+}
+
+.mdbook-callouts-error,
+.mdbook-callouts-danger {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/zap */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXphcCI+PHBvbHlnb24gcG9pbnRzPSIxMyAyIDMgMTQgMTIgMTQgMTEgMjIgMjEgMTAgMTIgMTAgMTMgMiIvPjwvc3ZnPg==');
+}
+
+.mdbook-callouts-bug {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/bug */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJ1ZyI+PHBhdGggZD0ibTggMiAxLjg4IDEuODgiLz48cGF0aCBkPSJNMTQuMTIgMy44OCAxNiAyIi8+PHBhdGggZD0iTTkgNy4xM3YtMWEzLjAwMyAzLjAwMyAwIDEgMSA2IDB2MSIvPjxwYXRoIGQ9Ik0xMiAyMGMtMy4zIDAtNi0yLjctNi02di0zYTQgNCAwIDAgMSA0LTRoNGE0IDQgMCAwIDEgNCA0djNjMCAzLjMtMi43IDYtNiA2Ii8+PHBhdGggZD0iTTEyIDIwdi05Ii8+PHBhdGggZD0iTTYuNTMgOUM0LjYgOC44IDMgNy4xIDMgNSIvPjxwYXRoIGQ9Ik02IDEzSDIiLz48cGF0aCBkPSJNMyAyMWMwLTIuMSAxLjctMy45IDMuOC00Ii8+PHBhdGggZD0iTTIwLjk3IDVjMCAyLjEtMS42IDMuOC0zLjUgNCIvPjxwYXRoIGQ9Ik0yMiAxM2gtNCIvPjxwYXRoIGQ9Ik0xNy4yIDE3YzIuMS4xIDMuOCAxLjkgMy44IDQiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-examples,
+.mdbook-callouts-example {
+  --mdbook-callouts-color: rgb(var(--color-purple-rgb));
+  --mdbook-callouts-background: rgba(var(--color-purple-rgb), 0.1);
+  /* https://lucide.dev/icons/list */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWxpc3QiPjxsaW5lIHgxPSI4IiB4Mj0iMjEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSI4IiB4Mj0iMjEiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjgiIHgyPSIyMSIgeTE9IjE4IiB5Mj0iMTgiLz48bGluZSB4MT0iMyIgeDI9IjMuMDEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSIzIiB4Mj0iMy4wMSIgeTE9IjEyIiB5Mj0iMTIiLz48bGluZSB4MT0iMyIgeDI9IjMuMDEiIHkxPSIxOCIgeTI9IjE4Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-quote {
+  --mdbook-callouts-color: rgb(158, 158, 158);
+  --mdbook-callouts-background: rgba(158, 158, 158, 0.1);
+  /* https://lucide.dev/icons/quote */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXF1b3RlIj48cGF0aCBkPSJNMyAyMWMzIDAgNy0xIDctOFY1YzAtMS4yNS0uNzU2LTIuMDE3LTItMkg0Yy0xLjI1IDAtMiAuNzUtMiAxLjk3MlYxMWMwIDEuMjUuNzUgMiAyIDIgMSAwIDEgMCAxIDF2MWMwIDEtMSAyLTIgMnMtMSAuMDA4LTEgMS4wMzFWMjBjMCAxIDAgMSAxIDF6Ii8+PHBhdGggZD0iTTE1IDIxYzMgMCA3LTEgNy04VjVjMC0xLjI1LS43NTctMi4wMTctMi0yaC00Yy0xLjI1IDAtMiAuNzUtMiAxLjk3MlYxMWMwIDEuMjUuNzUgMiAyIDJoLjc1YzAgMi4yNS4yNSA0LTIuNzUgNHYzYzAgMSAwIDEgMSAxeiIvPjwvc3ZnPg==');
+}
+
+
+.ayu {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.light {
+  --color-red-rgb: 233, 49, 71;
+  --color-red: #e93147;
+  --color-orange-rgb: 236, 117, 0;
+  --color-orange: #ec7500;
+  --color-yellow-rgb: 224, 172, 0;
+  --color-yellow: #e0ac00;
+  --color-green-rgb: 8, 185, 78;
+  --color-green: #08b94e;
+  --color-cyan-rgb: 0, 191, 188;
+  --color-cyan: #00bfbc;
+  --color-blue-rgb: 8, 109, 221;
+  --color-blue: #086ddd;
+  --color-purple-rgb: 120, 82, 238;
+  --color-purple: #7852ee;
+  --color-pink-rgb: 213, 57, 132;
+  --color-pink: #d53984;
+}
+
+.coal {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.navy {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.rust {
+  --color-red-rgb: 233, 49, 71;
+  --color-red: #e93147;
+  --color-orange-rgb: 236, 117, 0;
+  --color-orange: #ec7500;
+  --color-yellow-rgb: 224, 172, 0;
+  --color-yellow: #e0ac00;
+  --color-green-rgb: 8, 185, 78;
+  --color-green: #08b94e;
+  --color-cyan-rgb: 0, 191, 188;
+  --color-cyan: #00bfbc;
+  --color-blue-rgb: 8, 109, 221;
+  --color-blue: #086ddd;
+  --color-purple-rgb: 120, 82, 238;
+  --color-purple: #7852ee;
+  --color-pink-rgb: 213, 57, 132;
+  --color-pink: #d53984;
+}
+</style>
+<h1 id="design"><a class="header" href="#design">Design</a></h1>
+<p>The design of the language is a fun, imaginative step where we get to figure out
+how <em>Flavor</em> will look like and what will be the implications. I feel that in
+this step we are doing an exercise of creativity, software engineering, and
+problem solving.</p>
+<hr />
+<h2 id="introduction-to-the-design-phase"><a class="header" href="#introduction-to-the-design-phase">Introduction to the Design Phase</a></h2>
+<p>Having already explored the fundamentals of language development — including
+syntax, semantics, parsing techniques, type systems, and other — we are now
+ready to turn our attention to the design phase.
+This phase is where the theoretical meets the practical: where the abstract
+concepts and principles previously discussed come together to shape the unique
+identity of <em>Flavor</em>.</p>
+<p>Designing a programming language is both an art and a science. It requires
+balancing competing goals such as expressiveness, simplicity, performance, and
+usability.<br />
+Every design choice ripples through the language, affecting how users
+write code, how the compiler or interpreter processes it, and ultimately, how
+effective the language is at solving real-world problems.
+<em>But no pressure.</em></p>
+<p>In this section, we will expore the key design decisions that define
+<em>Flavor</em>. We will examine the rationale behind choosing specific language
+features, syntax styles, and semantic rules. Many of these decisions will
+reference concepts covered earlier in the book, such as:</p>
+<ul>
+<li>How the <strong>syntax and grammar</strong> influence both the language’s readability and
+the complexity of the parser.</li>
+<li>The impact of the <strong>type system</strong> on safety, flexibility, and developer
+experience.</li>
+<li>Trade-offs in <strong>memory management</strong> strategies and how they affect performance
+and ease of use.</li>
+<li>Approaches to <strong>error handling</strong> that balance robustness with clear,
+actionable feedback for programmers.</li>
+<li>The paradigms and programming models that <em>Flavor</em> embraces, informed by our
+discussion on language paradigms.</li>
+</ul>
+<p>Throughout this phase, we encourage a mindset of exploration and iteration.
+Language design, I find, is rarely linear or final on the first try. Instead, it evolves
+through experimentation, feedback, and reflection. By understanding the
+reasoning behind each choice, contributors and users alike will gain insight
+into the language’s goals and how they shape its implementation.</p>
+<p>As we progress, you will see how these design decisions map directly to the
+codebase covered in the <a href="design/../implementation/implementation.html">Implementation</a>
+section, creating a cohesive narrative from concept to concrete realization.</p>
+<div class="mdbook-callouts mdbook-callouts-note">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  note
+</p>
+<p>I strongly encourage you to experiment!
+If you are following the production of your own fersion of <em>Flavor</em> with your
+own implementation, please explore other design choices and their
+consequences!</p>
+</div>
 <div style="break-before: page; page-break-before: always;"></div><style>
 div.codeblock_filename_container + pre {
   margin-top: 0;
@@ -1071,39 +1678,35 @@ span.codeblock_filename_inner {
 }
 </style>
 <h1 id="flavor-imagining-the-first-design"><a class="header" href="#flavor-imagining-the-first-design">Flavor Imagining the First Design</a></h1>
-<p>The aim of this chapter is to produce an overview of the design of Flavor.
-We will <strong>not</strong> dive into the implementation details or choices yet.
-Rather, we will imagine what we want Flavor to look like.</p>
+<p>The aim of this chapter is to provide an overview of the design of Flavor. We
+will <strong>not</strong> dive into implementation details or choices yet. Rather, we will
+imagine what we want Flavor to look like.</p>
 <p><strong>Disclaimer</strong></p>
-<p>This chapter is not intended to show the syntax and semantics of Flavor.
-We are just imagining the language proposing ideas and discussing them.</p>
+<p>This chapter is not intended to present the final syntax and semantics of
+Flavor. We are simply imagining the language, proposing ideas, and discussing
+them.</p>
 <div class="mdbook-callouts mdbook-callouts-note">
 <p class="mdbook-callouts-title">
   <span class="mdbook-callouts-icon"></span>
-  note
+  i find this imaginative step very useful. if, while designing, we
 </p>
-<p>I find this imaginative step quite useful.
-I mean, if while designing we find a particular element to be ugly or unpleasant
-to write, why bother including it in the implementation.
-Without this step, finding those elements would be more difficult.
-Even on the other hand, spending time imagining the language could be a good way
-to explore possible features and content to add to the language.
-That being said, the last thing I want is for this project to get out of hand
-with the quantity of features.
-Each one of those will need to be explored and discussed to assess the
-feasibility and the reasons behind it.
-If these discussions produce positive expectations, then we will try and
-implement the thing.</p>
+<p>find a particular element ugly or unpleasant to write, why include it?
+Without this step, identifying such elements would be more difficult. On the
+other hand, spending time imagining the language is a great way to explore
+possible features and additions. That said, the last thing I want is for this
+project to become overwhelmed with too many features. Each proposed feature
+will need to be explored and discussed to assess its feasibility and
+rationale. If these discussions produce positive expectations, we will try to
+implement the feature.</p>
 </div>
 <h2 id="first-syntax-creation"><a class="header" href="#first-syntax-creation">First Syntax Creation</a></h2>
-<p>I will leave the following text and code unchanged for the remainder of the book
-creation.
-For context, I wrote this stuff without much thought during the first design
-phases.
-My intention in keeping it as is, basically without review, is to show the first
-ever ideas that went into the language aesthetics.
-The consequences of this first design are discussed in the next section.</p>
-<p>In the following piece of code we will explore the syntax for Flavor.</p>
+<p>I will leave the following text and code unchanged for the remainder of the
+book's creation process. For context, I wrote this content without much thought
+during the initial design phases. My intention in keeping it as is, basically
+without review, is to show the <em>very first</em> ideas that shaped the language's
+aesthetics. The consequences of this initial design are discussed in the next
+section.</p>
+<p>In the following code snippet, we explore the syntax for Flavor.</p>
 <div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">example.flv</span></div>
 <pre><code class="language-typescript">// variable declaration with explicit type
 let x: int = 10;
@@ -1111,25 +1714,24 @@ let x: int = 10;
 // variable declaration with implicit type
 let y = 20; // implicitly int
 
-// implicit casting
 // TODO: check if we want implicit casting
+// implicit casting
 20 + 20.0 // int + float
 
-// Parentheses or no parentheses
 print x;
 
 if x &gt; 2 {
     // code...
-}
-else {
+} else
+{
     // code...
 }
 
-fn is_even (a: int) -&gt; int {
+fn is_even (a: int) -&gt; bool {
     return a % 2 == 0;
 }
 
-let lambda: int -&gt; void = &lt;x:int&gt; {
+let lambda: int -&gt; nothing = &lt;x&gt; {
     print x;
 };
 
@@ -1138,8 +1740,7 @@ alias function fn;
 function fibonacci (x:int) -&gt; int {
     if x == 1 || x == 2 {
         return 1;
-    }
-    else {
+    } else {
         return fibonacci(x-1) + fibonacci(x-2);
     };
 }
@@ -1147,30 +1748,27 @@ function fibonacci (x:int) -&gt; int {
 let fibonacci_lambda = &lt;x:int&gt; -&gt; int { // fibonacci_lambda: &lt;int&gt; -&gt; int
     if x == 1 || x == 2 {
         return 1;
-    }
-    else {
-        return fibonacci(x-1) + fibonacci(x-2);
+    } else {
+        return fibonacci_lambda(x-1) + fibonacci_lambda(x-2);
     };
-}
-
+};
 </code></pre>
-<p>Just by looking at this code, it is apparent that there are a lot of considerations to make.</p>
-<h2 id="design-choices-and-reasons"><a class="header" href="#design-choices-and-reasons">Design choices and reasons</a></h2>
-<p>When discussing the aesthetic choices behind Flavor I will focus on
+<p>Just by looking at this code, it is clear that many considerations need to be
+made.</p>
+<h2 id="design-choices-and-reasons"><a class="header" href="#design-choices-and-reasons">Design Choices and Reasons</a></h2>
+<p>When discussing the aesthetic choices behind Flavor, I will focus on
 <strong>consistency</strong>.</p>
 <blockquote>
-<p>The language is <strong>consistent</strong> if its behavior and syntax can be understood
-without needing to be explicitly taught.<br />
-For example, if we always use <code>( )</code> to enclose parameters, <code>.</code> to access
-methods and properties and <code>[ ]</code> to access elements in lists or sets, then
-we naturally expect to access the second element of a tuple using <code>tuple[1]</code>,
-not <code>tuple(1)</code> or <code>tuple.1</code>.<br />
-This is what I mean by <strong>consistency</strong> in a programming language,
-and all definitions and choices we make should follow this principle.</p>
+<p>A language is <strong>consistent</strong> if its behavior and syntax can be understood
+without needing to be explicitly taught. For example, if we always use <code>( )</code>
+to enclose parameters, <code>.</code> to access methods and properties, and <code>[ ]</code> to
+access elements in lists or sets, then we naturally expect to access the
+second element of a tuple using <code>tuple[1]</code>, not <code>tuple(1)</code> or <code>tuple.1</code>. This
+is what I mean by <strong>consistency</strong> in a programming language, and all
+definitions and choices we make should follow this principle.</p>
 </blockquote>
-<p>Moreover, the syntax should be fluent and fun to write.
-To provide a practical example, let us consider a series of equivalent codes of
-various languages:</p>
+<p>Moreover, the syntax should be fluent and enjoyable to write. To provide a
+practical example, consider these equivalent codes from various languages:</p>
 <div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">java</span></div>
 <pre><code class="language-java">System.out.println("Hello World!");
 </code></pre>
@@ -1182,58 +1780,630 @@ various languages:</p>
 <div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">lua</span></div>
 <pre><code class="language-lua">print "Hello World!"
 </code></pre>
-<p>All these codes perform the same task: a simple console print.<br />
-As you can see, there are both simpler and more complex ways of writing this instruction.
-<em>Is there a best way to write the print command?</em><br />
-I certainly can't say that one is absolutely better than the others; however, I do have personal preferences.
-I like using the <code>!</code> to indicate a macro in the Rust example (<code>println!("...");</code>),
-because it immediately clarifies what is being used (macro vs function call).
-But I also find the simplicity of Lua (<code>print "..."</code>) very appealing.
-I'm confident that for <strong>Flavor</strong> we will avoid taking inspiration from heavy languages like Java.</p>
-<h3 id="semicolons"><a class="header" href="#semicolons">Semicolons</a></h3>
-<p>First of all the usage of the semicolons <code>;</code>.<br />
-I say that using a semicolon at the end of the line feels akin to the usage of a period at the end of a sentence.<br />
-It incentivizes one to take a moment and reflect.
-Furthermore, the usage of the semicolon represents the end of an action, the end
-of an intention described through code.
-Not only that, but there is also the fact that the semicolon can convey
-semantic information.
-The presence of the semicolon might indicate that the operation to its left is a <strong>statement</strong>
-(do not worry, we will get into what that means later in
-this book); while its absence could indicate an <strong>expression</strong>.</p>
-<h3 id="parentheses"><a class="header" href="#parentheses">Parentheses</a></h3>
-<p>To tackle the quetion of <em>parentheses or no parentheses</em>, we have to recognize
-that we can use the parentheses to convey specific semantical information.<br />
-We have a fair bit of freedom here.
-For instance, we might associate the absence of the parentheses with the
-<em>macros</em> (assuming we want to include them).</p>
-<p>Writing the code for the <em>Fibonacci Sequence</em> function (<em>see <a href="./design_of_the_language.html#first-syntax-creation">the code example</a></em>), I had to come up with
-the syntax for the typing of functions and for the definition of lambdas.<br />
-Looking at the code, I quite enjoy the use of the less than and greater than (<code>&lt; &gt;</code>) to
-enclose the parameters of the lambdas.
-Furthermore, that syntax can be reused for the type definition of functions.
-A lambda function's type, using this syntax, can be defined as <code>&lt;param_type&gt; -&gt; return_type</code>.
-However, I feel like we will need more practical testing to decide the usability
-evaluation of the <code>&lt; &gt;</code> symbols.</p>
+<p>All these codes perform the same task: a simple console print. As you can see,
+there are both simpler and more complex ways of writing this instruction.</p>
+<p><em>Is there a best way to write the print command?</em><br />
+I cannot say that one is absolutely better than the others; however, I do have
+personal preferences. I like using the <code>!</code> to indicate a macro in the Rust
+example (<code>println!("...");</code>), because it immediately clarifies what is being
+used (macro vs function call). But I also find the simplicity of Lua (<code>print "..."</code>) very appealing.<br />
+I'm confident that for <strong>Flavor</strong> we will avoid taking
+inspiration from heavy languages like Java.</p>
 <h3 id="aliasing"><a class="header" href="#aliasing">Aliasing</a></h3>
-<p>An interesting idea that came out while showing the syntax to a friend is the
-possibility to add aliases as <code>alias function fn</code>, possibly even adding multiple
-aliases at once like <code>alias [function, func] fn</code>.
-The result is the possibility for the customization of the language by the user
-itself.<br />
-I didn't think enough in the future to evaluate the consequences and
-implementation challenges for such system.
-We can postpone these elements to after we have a basic implementation.</p>
-<h2 id="design-ideas-wrap-up"><a class="header" href="#design-ideas-wrap-up">Design ideas wrap up</a></h2>
-<p>This step was intentionally messy, the idea was just to explore ideas.
-As of now, the only thing that I know I want to incorporate are:</p>
+<p>An interesting idea that came up while showing the syntax to a friend is the
+possibility to add aliases such as <code>alias function fn</code>, possibly even adding
+multiple aliases at once like <code>alias [function, func] fn</code>. This would allow
+users to customize the language themselves. I have not yet considered the
+consequences and implementation challenges of such a system. We can postpone
+these considerations until after we have a basic implementation.</p>
+<h2 id="design-ideas-wrap-up"><a class="header" href="#design-ideas-wrap-up">Design Ideas Wrap Up</a></h2>
+<p>This step was intentionally exploratory; the idea was just to generate ideas.
+As of now, the only things I know I want to incorporate are:</p>
 <ul>
 <li>some basic typing notation</li>
 <li>variable declaration</li>
 <li>functions and lambdas notation</li>
 </ul>
-<p>Hopefully that is enough to start having fun with the development.<br />
-In the next chapter we will explore the first step of the implementation.</p>
+<p>Hopefully, that is enough to start having fun with development. In the next
+chapter, we will explore the first step of the implementation.</p>
+<div style="break-before: page; page-break-before: always;"></div><style>
+div.codeblock_filename_container + pre {
+  margin-top: 0;
+}
+
+span.codeblock_filename_inner {
+  border-radius: 0.4rem 0.4rem 0 0;
+  padding: 0.6rem 1rem 0.6rem 1rem;
+  font-family: var(--mono-font) !important;
+  font-size: var(--code-font-size);
+}
+
+</style>
+<style>
+.mdbook-callouts {
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  /* border-left: 0.25em solid var(--mdbook-callouts-color); */
+  background: var(--mdbook-callouts-background);
+}
+
+.mdbook-callouts > *:first-child {
+  margin-top: 0;
+}
+
+.mdbook-callouts > *:last-child {
+  margin-bottom: 0;
+}
+
+.mdbook-callouts-title {
+  display: flex;
+  font-weight: 600;
+  align-items: center;
+  line-height: 1;
+  color: var(--mdbook-callouts-color);
+  text-transform: capitalize;
+}
+
+.mdbook-callouts-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.2em;
+  background-color: currentColor;
+  -webkit-mask: no-repeat center / 100%;
+  mask: no-repeat center / 100%;
+  -webkit-mask-image: var(--mdbook-callouts-icon);
+  mask-image: var(--mdbook-callouts-icon);
+}
+
+/* icons at: https://lucide.dev/icons/ */
+
+.mdbook-callouts-info {
+  --mdbook-callouts-color: rgb(var(--color-blue-rgb));
+  --mdbook-callouts-background: rgba(var(--color-blue-rgb), 0.1);
+  /* https://lucide.dev/icons/info */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWluZm8iPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTEyIDE2di00Ii8+PHBhdGggZD0iTTEyIDhoLjAxIi8+PC9zdmc+');
+}
+
+.mdbook-callouts-note {
+  --mdbook-callouts-color: rgb(var(--color-blue-rgb));
+  --mdbook-callouts-background: rgba(var(--color-blue-rgb), 0.1);
+  /* https://lucide.dev/icons/pencil */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXBlbmNpbCI+PHBhdGggZD0iTTE3IDNhMi44NSAyLjgzIDAgMSAxIDQgNEw3LjUgMjAuNSAyIDIybDEuNS01LjVaIi8+PHBhdGggZD0ibTE1IDUgNCA0Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-tip,
+.mdbook-callouts-hint {
+  --mdbook-callouts-color: rgb(var(--color-cyan-rgb));
+  --mdbook-callouts-background: rgba(var(--color-cyan-rgb), 0.1);
+  /* https://lucide.dev/icons/flame */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWZsYW1lIj48cGF0aCBkPSJNOC41IDE0LjVBMi41IDIuNSAwIDAgMCAxMSAxMmMwLTEuMzgtLjUtMi0xLTMtMS4wNzItMi4xNDMtLjIyNC00LjA1NCAyLTYgLjUgMi41IDIgNC45IDQgNi41IDIgMS42IDMgMy41IDMgNS41YTcgNyAwIDEgMS0xNCAwYzAtMS4xNTMuNDMzLTIuMjk0IDEtM2EyLjUgMi41IDAgMCAwIDIuNSAyLjV6Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-important {
+  --mdbook-callouts-color: rgb(var(--color-purple-rgb));
+  --mdbook-callouts-background: rgba(var(--color-purple-rgb), 0.1);
+  /* https://lucide.dev/icons/alert-circle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWFsZXJ0LWNpcmNsZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48bGluZSB4MT0iMTIiIHgyPSIxMiIgeTE9IjgiIHkyPSIxMiIvPjxsaW5lIHgxPSIxMiIgeDI9IjEyLjAxIiB5MT0iMTYiIHkyPSIxNiIvPjwvc3ZnPg==');
+}
+
+.mdbook-callouts-success,
+.mdbook-callouts-check,
+.mdbook-callouts-done {
+  --mdbook-callouts-color: rgb(var(--color-green-rgb));
+  --mdbook-callouts-background: rgba(var(--color-green-rgb), 0.1);
+  /* https://lucide.dev/icons/check */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWNoZWNrIj48cGF0aCBkPSJNMjAgNiA5IDE3bC01LTUiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-question,
+.mdbook-callouts-help,
+.mdbook-callouts-faq {
+  --mdbook-callouts-color: rgb(var(--color-pink-rgb));
+  --mdbook-callouts-background: rgba(var(--color-pink-rgb), 0.1);
+  /* https://lucide.dev/icons/help-circle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWhlbHAtY2lyY2xlIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik05LjA5IDlhMyAzIDAgMCAxIDUuODMgMWMwIDItMyAzLTMgMyIvPjxwYXRoIGQ9Ik0xMiAxN2guMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-warning,
+.mdbook-callouts-warn {
+  --mdbook-callouts-color: rgb(var(--color-orange-rgb));
+  --mdbook-callouts-background: rgba(var(--color-orange-rgb), 0.1);
+  /* https://lucide.dev/icons/alert-triangle */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWFsZXJ0LXRyaWFuZ2xlIj48cGF0aCBkPSJtMjEuNzMgMTgtOC0xNGEyIDIgMCAwIDAtMy40OCAwbC04IDE0QTIgMiAwIDAgMCA0IDIxaDE2YTIgMiAwIDAgMCAxLjczLTNaIi8+PHBhdGggZD0iTTEyIDl2NCIvPjxwYXRoIGQ9Ik0xMiAxN2guMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-caution {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/shield-alert */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXNoaWVsZC1hbGVydCI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy04IDN2N2MwIDYgOCAxMCA4IDEwIi8+PHBhdGggZD0iTTEyIDh2NCIvPjxwYXRoIGQ9Ik0xMiAxNmguMDEiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-failure,
+.mdbook-callouts-fail,
+.mdbook-callouts-missing {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/x */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXgiPjxwYXRoIGQ9Ik0xOCA2IDYgMTgiLz48cGF0aCBkPSJtNiA2IDEyIDEyIi8+PC9zdmc+');
+}
+
+.mdbook-callouts-error,
+.mdbook-callouts-danger {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/zap */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXphcCI+PHBvbHlnb24gcG9pbnRzPSIxMyAyIDMgMTQgMTIgMTQgMTEgMjIgMjEgMTAgMTIgMTAgMTMgMiIvPjwvc3ZnPg==');
+}
+
+.mdbook-callouts-bug {
+  --mdbook-callouts-color: rgb(var(--color-red-rgb));
+  --mdbook-callouts-background: rgba(var(--color-red-rgb), 0.1);
+  /* https://lucide.dev/icons/bug */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJ1ZyI+PHBhdGggZD0ibTggMiAxLjg4IDEuODgiLz48cGF0aCBkPSJNMTQuMTIgMy44OCAxNiAyIi8+PHBhdGggZD0iTTkgNy4xM3YtMWEzLjAwMyAzLjAwMyAwIDEgMSA2IDB2MSIvPjxwYXRoIGQ9Ik0xMiAyMGMtMy4zIDAtNi0yLjctNi02di0zYTQgNCAwIDAgMSA0LTRoNGE0IDQgMCAwIDEgNCA0djNjMCAzLjMtMi43IDYtNiA2Ii8+PHBhdGggZD0iTTEyIDIwdi05Ii8+PHBhdGggZD0iTTYuNTMgOUM0LjYgOC44IDMgNy4xIDMgNSIvPjxwYXRoIGQ9Ik02IDEzSDIiLz48cGF0aCBkPSJNMyAyMWMwLTIuMSAxLjctMy45IDMuOC00Ii8+PHBhdGggZD0iTTIwLjk3IDVjMCAyLjEtMS42IDMuOC0zLjUgNCIvPjxwYXRoIGQ9Ik0yMiAxM2gtNCIvPjxwYXRoIGQ9Ik0xNy4yIDE3YzIuMS4xIDMuOCAxLjkgMy44IDQiLz48L3N2Zz4=');
+}
+
+.mdbook-callouts-examples,
+.mdbook-callouts-example {
+  --mdbook-callouts-color: rgb(var(--color-purple-rgb));
+  --mdbook-callouts-background: rgba(var(--color-purple-rgb), 0.1);
+  /* https://lucide.dev/icons/list */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWxpc3QiPjxsaW5lIHgxPSI4IiB4Mj0iMjEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSI4IiB4Mj0iMjEiIHkxPSIxMiIgeTI9IjEyIi8+PGxpbmUgeDE9IjgiIHgyPSIyMSIgeTE9IjE4IiB5Mj0iMTgiLz48bGluZSB4MT0iMyIgeDI9IjMuMDEiIHkxPSI2IiB5Mj0iNiIvPjxsaW5lIHgxPSIzIiB4Mj0iMy4wMSIgeTE9IjEyIiB5Mj0iMTIiLz48bGluZSB4MT0iMyIgeDI9IjMuMDEiIHkxPSIxOCIgeTI9IjE4Ii8+PC9zdmc+');
+}
+
+.mdbook-callouts-quote {
+  --mdbook-callouts-color: rgb(158, 158, 158);
+  --mdbook-callouts-background: rgba(158, 158, 158, 0.1);
+  /* https://lucide.dev/icons/quote */
+  --mdbook-callouts-icon: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXF1b3RlIj48cGF0aCBkPSJNMyAyMWMzIDAgNy0xIDctOFY1YzAtMS4yNS0uNzU2LTIuMDE3LTItMkg0Yy0xLjI1IDAtMiAuNzUtMiAxLjk3MlYxMWMwIDEuMjUuNzUgMiAyIDIgMSAwIDEgMCAxIDF2MWMwIDEtMSAyLTIgMnMtMSAuMDA4LTEgMS4wMzFWMjBjMCAxIDAgMSAxIDF6Ii8+PHBhdGggZD0iTTE1IDIxYzMgMCA3LTEgNy04VjVjMC0xLjI1LS43NTctMi4wMTctMi0yaC00Yy0xLjI1IDAtMiAuNzUtMiAxLjk3MlYxMWMwIDEuMjUuNzUgMiAyIDJoLjc1YzAgMi4yNS4yNSA0LTIuNzUgNHYzYzAgMSAwIDEgMSAxeiIvPjwvc3ZnPg==');
+}
+
+
+.ayu {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.light {
+  --color-red-rgb: 233, 49, 71;
+  --color-red: #e93147;
+  --color-orange-rgb: 236, 117, 0;
+  --color-orange: #ec7500;
+  --color-yellow-rgb: 224, 172, 0;
+  --color-yellow: #e0ac00;
+  --color-green-rgb: 8, 185, 78;
+  --color-green: #08b94e;
+  --color-cyan-rgb: 0, 191, 188;
+  --color-cyan: #00bfbc;
+  --color-blue-rgb: 8, 109, 221;
+  --color-blue: #086ddd;
+  --color-purple-rgb: 120, 82, 238;
+  --color-purple: #7852ee;
+  --color-pink-rgb: 213, 57, 132;
+  --color-pink: #d53984;
+}
+
+.coal {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.navy {
+  --color-red-rgb: 251, 70, 76;
+  --color-red: #fb464c;
+  --color-orange-rgb: 233, 151, 63;
+  --color-orange: #e9973f;
+  --color-yellow-rgb: 224, 222, 113;
+  --color-yellow: #e0de71;
+  --color-green-rgb: 68, 207, 110;
+  --color-green: #44cf6e;
+  --color-cyan-rgb: 83, 223, 221;
+  --color-cyan: #53dfdd;
+  --color-blue-rgb: 2, 122, 255;
+  --color-blue: #027aff;
+  --color-purple-rgb: 168, 130, 255;
+  --color-purple: #a882ff;
+  --color-pink-rgb: 250, 153, 205;
+  --color-pink: #fa99cd;
+}
+
+.rust {
+  --color-red-rgb: 233, 49, 71;
+  --color-red: #e93147;
+  --color-orange-rgb: 236, 117, 0;
+  --color-orange: #ec7500;
+  --color-yellow-rgb: 224, 172, 0;
+  --color-yellow: #e0ac00;
+  --color-green-rgb: 8, 185, 78;
+  --color-green: #08b94e;
+  --color-cyan-rgb: 0, 191, 188;
+  --color-cyan: #00bfbc;
+  --color-blue-rgb: 8, 109, 221;
+  --color-blue: #086ddd;
+  --color-purple-rgb: 120, 82, 238;
+  --color-purple: #7852ee;
+  --color-pink-rgb: 213, 57, 132;
+  --color-pink: #d53984;
+}
+</style>
+<h1 id="language-features-and-style"><a class="header" href="#language-features-and-style">Language Features and Style</a></h1>
+<p>In designing a programming language, seemingly small choices—such as whether to
+use semicolons or parentheses in certain contexts—can have significant
+implications on the language’s readability, expressiveness, and user experience.
+These choices shape not only how code looks but also how it feels to write and
+maintain it.</p>
+<p>In this chapter, we analyze the implications of such decisions and explore their
+impact on the language’s style and usability. We will begin by examining the use
+of semicolons and parentheses, then expand to other stylistic and syntactic
+choices that influence the overall flavor of the language.</p>
+<p>Next, we will examine design choices related to implementation aspects, such as
+memory management, scopes, and more.</p>
+<div class="mdbook-callouts mdbook-callouts-note">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  note
+</p>
+<p>If you have a different perspective or think I missed something in any of the
+following points, please create an
+<a href="https://github.com/Mitra98t/Flavor/issues">issue</a> or contribute directly on
+<a href="https://github.com/Mitra98t/Flavor">GitHub</a>.</p>
+</div>
+<h2 id="semicolons-to-use-or-not-to-use"><a class="header" href="#semicolons-to-use-or-not-to-use">Semicolons: To Use or Not to Use?</a></h2>
+<p>The semicolon (<code>;</code>) is a classic statement terminator in many languages such as
+C, Java, and Rust. Its presence can convey important semantic information and
+affect how code is parsed and understood.</p>
+<h3 id="implications-of-using-semicolons"><a class="header" href="#implications-of-using-semicolons">Implications of Using Semicolons</a></h3>
+<ul>
+<li><strong>Encourages Deliberate Writing:</strong> Like a period in a sentence, semicolons
+encourage the writer to consider the end of an action or intent.</li>
+<li><strong>Clear Statement Boundaries:</strong> Semicolons explicitly mark the end of a
+statement, helping both the compiler and the programmer to distinguish one
+instruction from another.</li>
+<li><strong>Facilitates Multiple Statements Per Line:</strong> Semicolons allow multiple
+statements on a single line, which can be convenient but may also reduce
+readability if overused.</li>
+<li><strong>Parsing Simplicity:</strong> From an implementation standpoint, semicolons can
+simplify parsing by clearly delimiting statements.</li>
+</ul>
+<h3 id="implications-of-omitting-semicolons"><a class="header" href="#implications-of-omitting-semicolons">Implications of Omitting Semicolons</a></h3>
+<ul>
+<li><strong>Cleaner Syntax:</strong> Languages like Python and Lua omit semicolons by default,
+resulting in cleaner, less cluttered code.</li>
+<li><strong>Reliance on Line Breaks:</strong> The parser must rely on line breaks or
+indentation to determine statement boundaries, which can sometimes lead to
+ambiguity or subtle bugs.</li>
+<li><strong>Potential for Ambiguity:</strong> Without explicit terminators, certain constructs
+might become harder to parse or require additional rules.</li>
+</ul>
+<h3 id="choosing-a-semicolon-policy-for-flavor"><a class="header" href="#choosing-a-semicolon-policy-for-flavor">Choosing a Semicolon Policy for Flavor</a></h3>
+<p>For Flavor, using semicolons as statement terminators strikes a balance between
+clarity and expressiveness. It signals the end of an intention clearly while
+allowing flexibility in formatting. However, we may consider omitting semicolons
+in certain contexts (like the last statement in a block) to reduce verbosity—a
+feature common in modern languages.</p>
+<h2 id="parentheses-when-are-they-necessary"><a class="header" href="#parentheses-when-are-they-necessary">Parentheses: When Are They Necessary?</a></h2>
+<p>Parentheses are traditionally used to enclose function parameters, but their
+usage can vary widely across languages.</p>
+<h3 id="functions-and-parentheses"><a class="header" href="#functions-and-parentheses">Functions and Parentheses</a></h3>
+<ul>
+<li><strong>Clarity of Invocation:</strong> Parentheses clearly distinguish function calls from
+variable references or other expressions.</li>
+<li><strong>Parameter Grouping:</strong> They group parameters and help the parser understand
+argument boundaries.</li>
+<li><strong>Optional Parentheses:</strong> Some languages (e.g., Lua) allow omitting
+parentheses for function calls with a single string or table argument, making
+code more concise.</li>
+</ul>
+<h3 id="statements-without-parentheses"><a class="header" href="#statements-without-parentheses">Statements Without Parentheses</a></h3>
+<p>Consider the <code>print</code> statement in languages like Lua, where parentheses are
+optional or omitted entirely. This can make simple statements feel more natural
+and less cluttered.
+Also, ensuring the absence of parentheses help differentiate function calls from
+statements.</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">parentheses.flv</span></div>
+<pre><code class="language-lua">// function call
+fibonacci(10);
+
+// statement
+print "Hello World!";
+</code></pre>
+<p>This approach allows a statement to accept only a single expression as an
+argument. However, a problem arises when the statement requires multiple
+arguments<sup><a name="to-footnote-1"><a href="design/language_features.html#footnote-1">1</a></a></sup>.</p>
+<p>For example, consider a dummy statement <code>foo</code> that needs two arguments. We can
+pass a tuple to keep the <em>single expression as arugment for statements</em> rule,
+resulting in the syntax <code>foo (arg1, arg2)</code>. Note that this is not a function
+call, but a statement using a tuple as its parameter.</p>
+<p>The syntax does not clearly distinguish between these two cases in such
+scenarios.<br />
+Should we keep this syntax as it is? Or, similar to Rust's approach, should we
+adopt an explicit notation to clearly differentiate these elements, like Rust
+does with macros using an exclamation mark (<code>print!(...)</code>)?</p>
+<h3 id="implications-for-flavor"><a class="header" href="#implications-for-flavor">Implications for Flavor</a></h3>
+<p>In Flavor, we propose requiring parentheses for function calls to maintain
+clarity and consistency, especially as functions become more complex. However,
+for certain built-in statements or commands like <code>print</code>, we may allow
+parentheses to be optional or omitted, enhancing code readability and fluency.</p>
+<div class="mdbook-callouts mdbook-callouts-note">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  note
+</p>
+<p>Currently, parentheses are expected only for function calls, not for
+statements.</p>
+</div>
+<h2 id="type-definitions-style-readability-and-power"><a class="header" href="#type-definitions-style-readability-and-power">Type Definitions: Style, Readability, and Power</a></h2>
+<p>When it comes to defining types in a programming language, the choices we make
+have a big impact on how the language <em>feels</em> to write and read. It’s not just
+about correctness or functionality — it’s about aesthetics, expressiveness, and
+the balance between simplicity and control.</p>
+<h3 id="aesthetics-what-should-type-definitions-look-like"><a class="header" href="#aesthetics-what-should-type-definitions-look-like">Aesthetics: What Should Type Definitions Look Like?</a></h3>
+<p>Imagine you’re writing code and need to specify the type of a variable or
+function parameter. How do you want that to <em>look</em>?</p>
+<ul>
+<li>Should it be verbose and explicit, like <code>int</code>, <code>float</code>, or <code>string</code> — simple,
+familiar words that almost feel like natural language?</li>
+<li>Or should it be more precise and low-level, like <code>i32</code>, <code>f64</code>, or <code>usize</code>,
+which convey exact size and behavior but might feel more intimidating or
+technical?</li>
+<li>Maybe a mix of both, where you can use simple names for everyday cases but
+also dive into detailed type specifications when you want?</li>
+</ul>
+<p>For example, consider these two snippets:</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">Typing Example</span></div>
+<pre><code class="language-rust no_run noplayground">let x: number = 10;
+let y: int = 10;
+let z: i32 = 10;</code></pre>
+<p>Both declare an integer variable, but the first feels more approachable and
+human-friendly, whereas the second gives you exact control over the integer’s
+size and representation.
+We could also use more general names like <code>number</code>, but this would require
+automatically converting between different types of numbers (such as floats,
+integers, and doubles) when performing operations.</p>
+<h3 id="naming-number-vs-int-float-vs-f32-f64-etc"><a class="header" href="#naming-number-vs-int-float-vs-f32-f64-etc">Naming: Number vs Int, Float vs f32, f64, etc.</a></h3>
+<p>The choice of type names influences readability and clarity:</p>
+<ul>
+<li><strong>Simple names</strong> like <code>number</code>, <code>int</code>, <code>float</code> are easy to understand and
+remember — great for beginners and quick coding.</li>
+<li><strong>Detailed names</strong> like <code>i32</code>, <code>u64</code>, <code>f64</code> provide precision, which is
+crucial when performance, memory layout, or interoperability matter.</li>
+</ul>
+<p>Some languages (like Python or JavaScript) lean heavily on simple, abstract type
+names, hiding low-level details. Others (like Rust or C) expose those details
+upfront.</p>
+<h3 id="learning-from-other-languages"><a class="header" href="#learning-from-other-languages">Learning from Other Languages</a></h3>
+<ul>
+<li><strong>Rust</strong> uses explicit low-level types like <code>i32</code> and <code>f64</code>, which can be
+daunting for beginners but powerful for systems programming.</li>
+<li><strong>Go</strong> uses simple names like <code>int</code> and <code>float64</code>, balancing ease of use with
+precision.</li>
+<li><strong>TypeScript</strong> offers a rich type system with friendly names and advanced
+features, making it approachable yet expressive.</li>
+<li><strong>Python</strong> largely hides type details but has recently introduced optional
+typing with simple syntax to improve readability.</li>
+</ul>
+<h3 id="function-types"><a class="header" href="#function-types">Function Types</a></h3>
+<p>Functions are a core building block in any programming language, and how we define their types directly affects both readability and expressiveness. In Flavor, we want function type definitions to be clear, approachable, and consistent with the overall style of the language.</p>
+<p>A typical function definition in Flavor looks like this:</p>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">flavor</span></div>
+<pre><code class="language-typescript">fn foo(a: int, b: int) -&gt; int {
+  return a + b;
+}
+</code></pre>
+<p>With this notation, the user is able to statically describe the return type of
+the function as well as the parameters type.
+This will allow us to specify static checks and to provide rich error messages
+to the user.</p>
+<h3 id="wrapping-up"><a class="header" href="#wrapping-up">Wrapping Up</a></h3>
+<p>Type definitions are more than just syntax — they set the tone for how
+approachable or powerful the language feels.</p>
+<p>In the next sections, we’ll explore how these type definitions tie into the
+language’s semantics and implementation, and how they influence error handling,
+inference, and more.</p>
+<hr />
+<h1 id="implementation-choices-memory-management-scoping-and-error-handling"><a class="header" href="#implementation-choices-memory-management-scoping-and-error-handling">Implementation Choices: Memory Management, Scoping, and Error Handling</a></h1>
+<p>Now that we have explored the language’s syntax and design style, it’s time to
+consider some of the fundamental decisions that affect how Flavor will actually
+<em>work</em> under the hood. Since Flavor is intended to be an interpreted language
+(in its first incarnation at least), these choices shape the interpreter’s
+behavior and the programmer’s experience.</p>
+<p>This section does not dive into code specifics but focuses on the concepts,
+trade-offs, and implications of different implementation strategies. The goal is
+to give you a clear understanding of the possibilities so you can confidently
+explore or even implement any of them yourself.</p>
+<h2 id="memory-management"><a class="header" href="#memory-management">Memory Management</a></h2>
+<p>How a language manages memory is one of the most important design and
+implementation decisions. It affects performance, safety, ease of use, and
+complexity.</p>
+<div class="mdbook-callouts mdbook-callouts-note">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  note
+</p>
+<p>Explicit memory management policies may not be necessary in interpreted
+languages. However, since Flavor is designed as a learning platform rather than
+a practical programming language, we will include these policies in some form.</p>
+</div>
+<h3 id="manual-memory-management"><a class="header" href="#manual-memory-management">Manual Memory Management</a></h3>
+<ul>
+<li>The programmer is responsible for allocating and freeing memory explicitly.</li>
+<li>Offers fine-grained control and potentially very efficient memory use.</li>
+<li>However, it is error-prone: mistakes can cause memory leaks, dangling
+pointers, or crashes.</li>
+<li>Languages like C use this model.</li>
+</ul>
+<h3 id="garbage-collection-gc"><a class="header" href="#garbage-collection-gc">Garbage Collection (GC)</a></h3>
+<ul>
+<li>The interpreter automatically tracks and frees memory that is no longer in
+use.</li>
+<li>Removes the burden of manual memory management from the programmer, reducing
+certain classes of bugs.</li>
+<li>GC can introduce pauses or overhead, which might affect performance or
+responsiveness.</li>
+<li>Languages like Java, JavaScript, and Python use GC.</li>
+</ul>
+<p>There are different GC strategies:</p>
+<ul>
+<li><strong><a href="https://en.wikipedia.org/wiki/Tracing_garbage_collection">Tracing GC</a>:</strong> Periodically scans memory to find unreachable objects.</li>
+<li><strong><a href="https://en.wikipedia.org/wiki/Reference_counting">Reference Counting</a>:</strong> Keeps counters for references and frees objects when
+count reaches zero.</li>
+</ul>
+<h3 id="stack-allocation"><a class="header" href="#stack-allocation">Stack Allocation</a></h3>
+<ul>
+<li>Some values (like local variables) can be allocated on a stack with automatic
+cleanup when scope ends.</li>
+<li>This is fast and simple but limited to values with clear
+<a href="https://en.wikipedia.org/wiki/Object_lifetime">lifetimes</a>.</li>
+<li>Often combined with GC or manual management for other cases.</li>
+</ul>
+<h3 id="implications-for-flavor-1"><a class="header" href="#implications-for-flavor-1">Implications for Flavor</a></h3>
+<p>Choosing <strong>garbage collection</strong> (GC) simplifies programming for the user and
+fits well with the flexibility of an interpreted language. Among GC techniques,
+reference counting is easier to implement but has difficulties handling cyclical
+references.<br />
+Manual memory management offers powerful control but significantly
+increases complexity on the user hand and risk, making it less suitable for a
+language aimed at learning. However it is a fairly easy system to implement in
+its most basic form.<br />
+Meanwhile, stack allocation can improve performance for
+local variables but requires careful tracking of variable lifetimes to avoid
+errors.</p>
+<h2 id="scoping"><a class="header" href="#scoping">Scoping</a></h2>
+<p>Scoping rules determine how and where variables and functions are visible and
+accessible, shaping both language semantics and implementation complexity.</p>
+<h3 id="lexical-static-scoping"><a class="header" href="#lexical-static-scoping">Lexical (Static) Scoping</a></h3>
+<ul>
+<li>The scope of variables is determined by their position in the source code.</li>
+<li>Most modern languages use lexical scoping.</li>
+<li>Enables predictable bindings and supports closures (functions capturing
+variables from their defining environment).</li>
+<li>Easier to reason about and implement in an interpreter.</li>
+</ul>
+<h3 id="dynamic-scoping"><a class="header" href="#dynamic-scoping">Dynamic Scoping</a></h3>
+<ul>
+<li>Variable bindings are resolved by the call stack at runtime.</li>
+<li>Can be more flexible but harder to predict and debug.</li>
+<li>Rarely used in modern mainstream languages.</li>
+</ul>
+<h3 id="nested-scopes-and-closures"><a class="header" href="#nested-scopes-and-closures">Nested Scopes and Closures</a></h3>
+<ul>
+<li>Supporting nested scopes allows functions to be defined inside other
+functions, capturing variables from outer scopes.</li>
+<li>Closures are powerful for abstraction and functional programming styles.</li>
+<li>Implementing closures requires the interpreter to maintain environments that
+outlive their original call frames.</li>
+</ul>
+<h3 id="implications-for-flavor-2"><a class="header" href="#implications-for-flavor-2">Implications for Flavor</a></h3>
+<ol>
+<li>Flavor adopts lexical (static) scoping, meaning that the visibility of
+variables is determined by their position in the source code rather than the
+call stack at runtime. This ensures that variables declared inside a block are
+only accessible within that block and any nested inner blocks.</li>
+<li>This scoping model enforces clear boundaries for variable visibility,
+preventing accidental access to variables that are out of scope. For example,
+the following code produces an error because <code>y</code> is used outside its declaring
+block:</li>
+</ol>
+<div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">Scoping Example</span></div>
+<pre><code class="language-typescript">let x = 4;
+
+if x &gt; 2 {
+  let y = 5;
+  y;
+}
+
+print y; // Error: y is not defined here
+</code></pre>
+<ol start="3">
+<li>By making variable lifetimes explicit and predictable, lexical scoping
+improves both the language’s design and the programmer’s experience. Errors
+caused by undefined or shadowed variables can be detected early, helping users
+write safer and more maintainable code.</li>
+<li>Nested scopes and variable shadowing are naturally supported. Inner blocks
+can declare variables with the same name as outer ones, temporarily
+overriding the outer binding within that inner scope. This adds flexibility
+while maintaining clarity.</li>
+</ol>
+<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
+<p>How a language handles errors influences code robustness and developer
+experience.</p>
+<h3 id="compile-time-vs-runtime-errors"><a class="header" href="#compile-time-vs-runtime-errors">Compile-Time vs Runtime Errors</a></h3>
+<ul>
+<li><strong>Compile-time errors</strong> catch problems before the program runs, improving safety
+but requiring more upfront checks.</li>
+<li><strong>Runtime errors</strong> occur during execution and must be handled gracefully to avoid
+crashes.</li>
+</ul>
+<h3 id="exception-handling"><a class="header" href="#exception-handling">Exception Handling</a></h3>
+<ul>
+<li>Languages often provide constructs like <code>try/catch</code> to handle exceptions.</li>
+<li>Enables separating error-handling code from normal logic but can complicate
+control flow.</li>
+</ul>
+<h3 id="result-types-and-explicit-handling"><a class="header" href="#result-types-and-explicit-handling">Result Types and Explicit Handling</a></h3>
+<ul>
+<li>Some languages (like Rust) use types like <code>Result</code> to represent success or
+failure explicitly.</li>
+<li>Encourages handling errors explicitly but can add verbosity.</li>
+</ul>
+<h3 id="implications-for-flavor-3"><a class="header" href="#implications-for-flavor-3">Implications for Flavor</a></h3>
+<p>TODO...</p>
+<h2 id="additional-style-decisions"><a class="header" href="#additional-style-decisions">Additional Style Decisions</a></h2>
+<p>Beyond semicolons and parentheses, other stylistic choices also shape the
+language’s character:</p>
+<h3 id="1-block-delimiters"><a class="header" href="#1-block-delimiters">1. <strong>Block Delimiters</strong></a></h3>
+<ul>
+<li>Using braces <code>{}</code> to delimit blocks is familiar and visually clear.</li>
+<li>Alternatives include indentation-based blocks (like Python), which reduce
+punctuation but complicate parsing.</li>
+</ul>
+<hr />
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<p>Small syntactic and stylistic choices have outsized effects on the language’s
+usability and identity. By carefully considering semicolon usage, parentheses,
+block delimiters, keywords, operators, and type annotations, we hope to better
+streamline the implementation process.</p>
+<p>Each of these implementation choices—memory management, scoping, and error
+handling—comes with trade-offs that affect performance, safety, ease of use, and
+complexity. There is no one-size-fits-all solution, and part of the learning
+journey is understanding these trade-offs deeply.</p>
+<p>By exploring these options thoroughly, anyone interested in programming
+language development can choose the path that best fits their goals, whether for
+Flavor or any other language project.</p>
+<p>In the following chapters, we will explore these decisions in more detail and
+see how they influence both the language’s design and its implementation.<p><hr/></p>
+<p><a name="footnote-1"><a href="design/language_features.html#to-footnote-1">1</a></a>: Calling them arguments is improper, but the term provides a
+good intuitive understanding of the concept.</p>
 <div style="break-before: page; page-break-before: always;"></div><style>
 div.codeblock_filename_container + pre {
   margin-top: 0;
@@ -1505,7 +2675,7 @@ surely not complete.
 There are multiple different ways one could go about the creation of a
 programming language.</p>
 </div>
-<p>From a high level prospective, we can think of these steps as:</p>
+<p>From a high level prospective, we can think of these steps as follows:</p>
 <ol>
 <li>Formalizing the content of the source code in a structure we can work with</li>
 <li>Checking if the source code follows the grammar rules we defined and, if so,

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - Flavor</title>
+        <title>Language Development - Flavor</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="../toc.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -102,7 +102,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -137,7 +137,7 @@
                     <h1 class="menu-title">Flavor</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
 
@@ -416,171 +416,17 @@ span.codeblock_filename_inner {
   --color-pink: #d53984;
 }
 </style>
-<h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<div class="mdbook-callouts mdbook-callouts-warning">
-<p class="mdbook-callouts-title">
-  <span class="mdbook-callouts-icon"></span>
-  warning
-</p>
-<p>Book rework in progress</p>
-</div>
-<p>In this book, we will follow my attempt at building a simple community driven programming
-language <a href="https://github.com/Mitra98t/Flavor">GitHub Repository</a>.
-It is not my first time attempting such a project, but it is the first time
-doing it in a structured way while sharing the process and the code.
-The other attempts were more of a learning experience; one time producing a
-lexer and parser, another time producing a simple interpreter for a university
-language course.
-I am missing the whole picture, so I will try to cover all the steps this time.
-Moreover, I have never built a compiler, so this will be a new experience for
-me.</p>
-<p>To specify some things before we start:</p>
-<ul>
-<li>This project is not meant to be a <em>learning resource</em>, but rather a <strong>learning
-platform</strong>; the idea of sharing this experience is guided by the hope that it
-will help others learn from my mistakes and successes.
-I also hope to learn from suggestions and critics along the way myself.</li>
-<li>This book will primarily show my reasoning process and the decisions I make
-about language design and implementation.
-I will try to keep the explanations linear and clear (don't make me promise).</li>
-<li>I will try to keep the code as clean and readable as possible, but I cannot
-guarantee that it will be perfect.</li>
-<li>I will be using Rust for reasons that we will discuss.</li>
-<li>The implementation will be done from scratch -- as much as possible --
-limiting the use of libraries to the bare minimum.</li>
-<li>Calling it a book sounds pretentious; I will use this terminology purely because
-I'm using <a href="https://rust-lang.github.io/mdBook/index.html">mdbook</a> to write it
-and book appears to be the name used.</li>
-</ul>
-<p>Lastly, I <strong>appreciate</strong> any feedback, suggestion, or contribution to the project.
-I will try to keep the code on GitHub up to date with the content of the book, so you can
-follow along with the code as we progress through the chapters.</p>
-<p>Without further ado, let's get started!</p>
-<h2 id="who-am-i"><a class="header" href="#who-am-i">Who am I?</a></h2>
-<p>I am a computer science student with a passion for programming languages and who
-cannot focus on one thing for too long.
-I have been learning about prgramming languages creation for a while (mainly for
-my degree) and I wanted to put my knowledge into practice.</p>
-<p>Please note that English is not my first language, so there might be some mistakes
-in the text.
-I might confuse the usage of 'I' and 'we' to describe the subject behind the process, and I am sure
-that the sequence of tenses will not be perfect.
-I hope that at some point the usage of the word 'I' will be wrong due to the
-contributions of others, but for now, I will use it to refer to myself (at least
-in the Introduction).</p>
-<p>I find criticism very helpful and I like environments where I can learn
-from others -- and hopefully where others can learn a thing or two from me --
-so I will be happy to receive any feedback or suggestions.</p>
-<h2 id="who-are-you"><a class="header" href="#who-are-you">Who are you?</a></h2>
-<p>If you found this book, there is the good chance that you are interested in
-language development and design.
-I do not want to be so presumptuous as to assume that you will learn from this
-resource even if you are a seasoned developer, but I hope that you will find
-something useful in it.</p>
-<p>The target audience I have in mind is someone who has some programming
-experience, but is not necessarily an expert and, more importantly, who is
-quite new to the topic of programming languages.</p>
-<h2 id="how-to-read-this-book"><a class="header" href="#how-to-read-this-book">How to read this book</a></h2>
-<p>The book is structured as a sort of <em>diary</em> journaling the development of <em>Flavor</em>.<br />
-For that reason the chapter will not follow a logical structure, but instead
-will follow the production timeline.</p>
-<p>To maintain a structured system in the book, it will be structured as follows:</p>
-<ul>
-<li><strong>Language Development</strong>
-<ul>
-<li>Describes language development concepts and ideas.</li>
-</ul>
-</li>
-<li><strong>Design</strong>
-<ul>
-<li>Outlines the design choices behind the Flavor language discussing
-their concequences and implications.</li>
-<li>Flavor features</li>
-</ul>
-</li>
-<li><strong>Implementation</strong>
-<ul>
-<li>Describes the implementation structure digging deep in the code.</li>
-</ul>
-</li>
-</ul>
-<p><strong>Look out for the call-outs!</strong>
-I will insert call-outs in the book, each one means something.</p>
-<div class="mdbook-callouts mdbook-callouts-note">
-<p class="mdbook-callouts-title">
-  <span class="mdbook-callouts-icon"></span>
-  note
-</p>
-<p>Here I will include notes, mainly my reasonings and thoughts</p>
-</div>
-<div class="mdbook-callouts mdbook-callouts-question">
-<p class="mdbook-callouts-title">
-  <span class="mdbook-callouts-icon"></span>
-  question
-</p>
-<p>Here I will note stuff to be studied more or that I do not fully understand
-yet</p>
-</div>
-<div class="mdbook-callouts mdbook-callouts-important">
-<p class="mdbook-callouts-title">
-  <span class="mdbook-callouts-icon"></span>
-  important
-</p>
-<p>Here I will describe important sections to look for (usually highlighting
-possible mistakes)</p>
-</div>
-<blockquote>
-<p>Add more of those here...</p>
-</blockquote>
-<p><strong>Syntax highlighting!</strong>
-To highlight the syntax of Flavor throughout the examples and the snippets
-in this book, we will use other languages' highlighting (at least until I figure
-out how to create custom highlighting for Flavor) so it might be imperfect.</p>
-<h2 id="some-design-choices"><a class="header" href="#some-design-choices">Some design choices</a></h2>
-<p>The first, and most predominant, choice is the language we will be using for
-development.
-I have chosen Rust for a few reasons.
-First, I am quite enjoying the language, I find its consistency and safety features
-very appealing; the strong typing system promotes good design at an early stage.
-There could be a counter argument to this, mainly saying that Rust puts so much
-focus on types that, after spending a lot of time resolving errors arising from
-types inconsistencies, you will have forgotten what the program was supposed to do.
-But it surely runs without any errors.
-I do not think that this is a problem, and even so, there are multiple languages
-one could use for this project so feel free to experiment.
-Second, Rust offers the possibility to write low-level code that, in the remote
-case that I manage to finish this project implementing a compiler, could be
-really useful.
-And lastly, Rust is a language that is gaining popularity and has a growing
-community, so I feel like it is a good choice given the shared nature of this
-project.</p>
-<p>The second choice is about the decision to implement the language from scratch.
-I want to understand the process of language design and implementation; the goal
-is not to create a production-ready, feature-rich and performant language; the
-goal is, instead, to face the challenges someone before me would have faced, and
-to come up with solutions that I am reasonably happy with.</p>
-<h2 id="flavor"><a class="header" href="#flavor">Flavor</a></h2>
-<p><strong>Flavor</strong>, the language protagonist of this book.</p>
-<p>Flavor will be an interpreted language (unless I manange to write a compiler)
-offering a strict typing system, type inference, function and lambdas, and --
-possibly -- classes and objects.
-I will admit that the features Flavor will offer are to be decided and will
-greatly depend on my implementation.
-The few listed prior are just what I <em>know</em> that I want to tackle in this
-journey.</p>
-<p>The aesthetic of Flavor will be designed with the concern of consistency
-in mind -- going back to <a href="./introduction.html#some-design-choices">the decision to use
-Rust in Some design choices</a>.
-I have tried a not-so-small collection of languages, and I have found a series of
-elements that I like and don't like in the syntaxes I have learned.
-Flavor's syntax will be based on the intersection of those elements.</p>
+<h1 id="language-development"><a class="header" href="#language-development">Language Development</a></h1>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../roadmap.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
-                            <a rel="next prefetch" href="roadmap.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../design/design.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -590,8 +436,11 @@ Flavor's syntax will be based on the intersection of those elements.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../roadmap.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
-                    <a rel="next prefetch" href="roadmap.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../design/design.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
@@ -606,13 +455,13 @@ Flavor's syntax will be based on the intersection of those elements.</p>
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
 

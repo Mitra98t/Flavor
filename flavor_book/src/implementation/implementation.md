@@ -17,7 +17,7 @@ A language's engine is usually divided into three sections:
 > There are multiple different ways one could go about the creation of a
 > programming language.
 
-From a high level prospective, we can think of these steps as:
+From a high level prospective, we can think of these steps as follows:
 
 1. Formalizing the content of the source code in a structure we can work with
 2. Checking if the source code follows the grammar rules we defined and, if so,

@@ -41,6 +41,17 @@
         <script src="toc.js"></script>
     </head>
     <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
     <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
@@ -118,7 +129,7 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -406,8 +417,15 @@ span.codeblock_filename_inner {
 }
 </style>
 <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>In this book, we will follow my attempt at building a simple programming
-language.
+<div class="mdbook-callouts mdbook-callouts-warning">
+<p class="mdbook-callouts-title">
+  <span class="mdbook-callouts-icon"></span>
+  warning
+</p>
+<p>Book rework in progress</p>
+</div>
+<p>In this book, we will follow my attempt at building a simple community driven programming
+language <a href="https://github.com/Mitra98t/Flavor">GitHub Repository</a>.
 It is not my first time attempting such a project, but it is the first time
 doing it in a structured way while sharing the process and the code.
 The other attempts were more of a learning experience; one time producing a
@@ -418,8 +436,8 @@ Moreover, I have never built a compiler, so this will be a new experience for
 me.</p>
 <p>To specify some things before we start:</p>
 <ul>
-<li>This project is not meant to be a learning resource, but rather a learning
-platform; the idea of sharing this experience is guided by the hope that it
+<li>This project is not meant to be a <em>learning resource</em>, but rather a <strong>learning
+platform</strong>; the idea of sharing this experience is guided by the hope that it
 will help others learn from my mistakes and successes.
 I also hope to learn from suggestions and critics along the way myself.</li>
 <li>This book will primarily show my reasoning process and the decisions I make
@@ -463,20 +481,29 @@ something useful in it.</p>
 experience, but is not necessarily an expert and, more importantly, who is
 quite new to the topic of programming languages.</p>
 <h2 id="how-to-read-this-book"><a class="header" href="#how-to-read-this-book">How to read this book</a></h2>
-<p>The book is structured as a sort of <em>diary</em> journaling the development of Flavor.
+<p>The book is structured as a sort of <em>diary</em> journaling the development of <em>Flavor</em>.<br />
 For that reason the chapter will not follow a logical structure, but instead
-will follow the production timeline.
-This means that we can go back to describing the design of the language at any moment
-during development to accurately follow my steps.
-The implementation on the other hand will be structured based on the code
-itself; the chapter related to the <strong><a href="./implementation/lexer.html">Lexer</a></strong>, for instance, will describe the lexer's
-implementation mimicking the <em>wiki</em> of a project.<br />
-To reiterate, the <a href="./implementation/implementation.html">implementation</a> section will be structured and organized
-logically, while the rest of the book will follow the development timeline.</p>
-<p>If you are following the production of this book, then you might find the
-content of this paragraph rather unsatisfying.
-I will expand on this paragraph when I need to include a new notation in the
-book.</p>
+will follow the production timeline.</p>
+<p>To maintain a structured system in the book, it will be structured as follows:</p>
+<ul>
+<li><strong>Language Development</strong>
+<ul>
+<li>Describes language development concepts and ideas.</li>
+</ul>
+</li>
+<li><strong>Design</strong>
+<ul>
+<li>Outlines the design choices behind the Flavor language discussing
+their concequences and implications.</li>
+<li>Flavor features</li>
+</ul>
+</li>
+<li><strong>Implementation</strong>
+<ul>
+<li>Describes the implementation structure digging deep in the code.</li>
+</ul>
+</li>
+</ul>
 <p><strong>Look out for the call-outs!</strong>
 I will insert call-outs in the book, each one means something.</p>
 <div class="mdbook-callouts mdbook-callouts-note">
@@ -533,9 +560,7 @@ is not to create a production-ready, feature-rich and performant language; the
 goal is, instead, to face the challenges someone before me would have faced, and
 to come up with solutions that I am reasonably happy with.</p>
 <h2 id="flavor"><a class="header" href="#flavor">Flavor</a></h2>
-<p><strong>Flavor</strong>, the language protagonist of this book.<br />
-The name is not meant to represent anything; I just find it sci-fi enough so
-that is seems useful.</p>
+<p><strong>Flavor</strong>, the language protagonist of this book.</p>
 <p>Flavor will be an interpreted language (unless I manange to write a compiler)
 offering a strict typing system, type inference, function and lambdas, and --
 possibly -- classes and objects.
