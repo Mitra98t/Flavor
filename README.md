@@ -1,5 +1,6 @@
 # Flavor
 
+<!-- TODO: Update images -->
 <p align="center">
   <img src="./assets/simple_code.png" alt="Image 1" width="60%" style="display: inline-block; margin-right: 10px;" />
   <img src="./assets/aliasing_example.png" alt="Image 2" width="38%" style="display: inline-block;" />
