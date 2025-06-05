@@ -44,6 +44,14 @@ a vector of ASTs (one per statement).
 
 ## Development
 
+**Disclamer**  
+Implementing a parser is challenging because it involves understanding and
+handling many elements and concepts at the same time. When building the parser
+from scratch, we will add each part step by step until the system is complete.  
+In this chapter, we will present the implementation and explanations of the key
+aspects, often including comments that guide you through the process as if we
+were building the parser together.
+
 As we have already done for the [lexer](./lexer.md), we will start by defining
 the necessary types to then use in the parser (the code is again found in
 [types](https://github.com/Mitra98t/Flavor/blob/main/src/types.rs)).
@@ -53,12 +61,39 @@ More precisely, we are going to define the AST nodes first.
 ```rust,no_run,noplayground:types.rs
 // ... Above
 pub enum ASTNode {
+    Body {
+        nodes: Vec<ASTNode>,
+    },
+    If {
+        guard: Box<ASTNode>,
+        then_body: Box<ASTNode>,
+        else_body: Option<Box<ASTNode>>,
+    },
+    While {
+        guard: Box<ASTNode>,
+        body: Box<ASTNode>,
+    },
     LetDeclaration {
         identifier: String,
-        var_type: Option<String>,
+        var_type: Option<Type>,
         expr: Box<ASTNode>,
     },
+    FunctionDeclaration {
+        name: String,
+        parameters: Vec<(String, Type)>,
+        return_type: Type,
+        body: Box<ASTNode>,
+    },
+    Return(Box<ASTNode>),
+    Break,
+    FunctionCall {
+        callee: Box<ASTNode>,
+        arguments: Vec<ASTNode>,
+    },
+    UnitLiteral,
     NumberLiteral(String),
+    StringLiteral(String),
+    BoolLiteral(String),
     Identifier(String),
     ArrayAccess {
         array: Box<ASTNode>,
@@ -77,6 +112,22 @@ pub enum ASTNode {
     ExpressionStatement(Box<ASTNode>),
 }
 ```
+
+I understand that this collection of AST nodes might seem random or complicated.
+This is because, as mentioned earlier, in this chapter i have listed the parser
+in its final state. However, I did not implement everything all at once. This is
+a limitation of the book format.
+
+Let us gather some key insights from this enum of `ASTNodes`.
+As discussed in [Language
+Development](../language_development/language_development.md) we need to specify
+the nodes with which to represnet the elements present in Flavor.
+We will break down the `ASTNode` enum by analyzin g some examples.
+The **literals** get their specific node (Number -> NumberLiteral, True, False ->
+BooleanLiteral, ecc...).
+The literals can be used as operand in **operations**, both binary and unary
+(BinaryExpression, UnaryExpression).
+Then comes the **statements**
 
 From this definition alone the recursive nature of the parser structure is
 apparent.

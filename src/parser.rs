@@ -95,6 +95,7 @@ impl Parser {
         let then_body = self.parse_body()?;
         let mut else_body = None;
         if self.current_tok().tok_name == TN::Else {
+            self.expect_tok(TN::Else)?;
             else_body = Some(Box::new(self.parse_body()?));
         }
         // HACK: IF WITH Semicolon??

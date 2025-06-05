@@ -459,6 +459,13 @@ semicolon).
 This structure is reflected on the implementation of the parser, which will produce
 a vector of ASTs (one per statement).</p>
 <h2 id="development"><a class="header" href="#development">Development</a></h2>
+<p><strong>Disclamer</strong><br />
+Implementing a parser is challenging because it involves understanding and
+handling many elements and concepts at the same time. When building the parser
+from scratch, we will add each part step by step until the system is complete.<br />
+In this chapter, we will present the implementation and explanations of the key
+aspects, often including comments that guide you through the process as if we
+were building the parser together.</p>
 <p>As we have already done for the <a href="./lexer.html">lexer</a>, we will start by defining
 the necessary types to then use in the parser (the code is again found in
 <a href="https://github.com/Mitra98t/Flavor/blob/main/src/types.rs">types</a>).</p>
@@ -466,12 +473,39 @@ the necessary types to then use in the parser (the code is again found in
 <div class="codeblock_filename_container"><span class="codeblock_filename_inner hljs">types.rs</span></div>
 <pre><code class="language-rust no_run noplayground">// ... Above
 pub enum ASTNode {
+    Body {
+        nodes: Vec&lt;ASTNode&gt;,
+    },
+    If {
+        guard: Box&lt;ASTNode&gt;,
+        then_body: Box&lt;ASTNode&gt;,
+        else_body: Option&lt;Box&lt;ASTNode&gt;&gt;,
+    },
+    While {
+        guard: Box&lt;ASTNode&gt;,
+        body: Box&lt;ASTNode&gt;,
+    },
     LetDeclaration {
         identifier: String,
-        var_type: Option&lt;String&gt;,
+        var_type: Option&lt;Type&gt;,
         expr: Box&lt;ASTNode&gt;,
     },
+    FunctionDeclaration {
+        name: String,
+        parameters: Vec&lt;(String, Type)&gt;,
+        return_type: Type,
+        body: Box&lt;ASTNode&gt;,
+    },
+    Return(Box&lt;ASTNode&gt;),
+    Break,
+    FunctionCall {
+        callee: Box&lt;ASTNode&gt;,
+        arguments: Vec&lt;ASTNode&gt;,
+    },
+    UnitLiteral,
     NumberLiteral(String),
+    StringLiteral(String),
+    BoolLiteral(String),
     Identifier(String),
     ArrayAccess {
         array: Box&lt;ASTNode&gt;,
@@ -489,6 +523,20 @@ pub enum ASTNode {
     },
     ExpressionStatement(Box&lt;ASTNode&gt;),
 }</code></pre>
+<p>I understand that this collection of AST nodes might seem random or complicated.
+This is because, as mentioned earlier, in this chapter i have listed the parser
+in its final state. However, I did not implement everything all at once. This is
+a limitation of the book format.</p>
+<p>Let us gather some key insights from this enum of <code>ASTNodes</code>.
+As discussed in <a href="../language_development/language_development.html">Language
+Development</a> we need to specify
+the nodes with which to represnet the elements present in Flavor.
+We will break down the <code>ASTNode</code> enum by analyzin g some examples.
+The <strong>literals</strong> get their specific node (Number -&gt; NumberLiteral, True, False -&gt;
+BooleanLiteral, ecc...).
+The literals can be used as operand in <strong>operations</strong>, both binary and unary
+(BinaryExpression, UnaryExpression).
+Then comes the <strong>statements</strong></p>
 <p>From this definition alone the recursive nature of the parser structure is
 apparent.
 Notice how the expression (<code>expr</code>) in the <code>LetDeclaration</code> node is itself of

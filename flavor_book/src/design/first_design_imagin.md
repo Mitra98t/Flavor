@@ -10,7 +10,8 @@ This chapter is not intended to present the final syntax and semantics of
 Flavor. We are simply imagining the language, proposing ideas, and discussing
 them.
 
-> [!NOTE] I find this imaginative step very useful. If, while designing, we
+> [!NOTE]
+> I find this imaginative step very useful. If, while designing, we
 > find a particular element ugly or unpleasant to write, why include it?
 > Without this step, identifying such elements would be more difficult. On the
 > other hand, spending time imagining the language is a great way to explore

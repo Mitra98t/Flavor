@@ -12,17 +12,19 @@ use crate::types::print_ast;
 fn main() {
     let code = r#"
 
-while 5 >2 {
-    if true {
-        break;
-    }
-}
-
 fn foo (x: int, y: int) -> int {
-    return x + y;
+    while x < y {
+        x++;
+        if x>y {
+            return x;
+        }
+    }
+    return y;
 }
 
-foo(4,5);
+let bar = foo;
+
+6+bar(4,3);
 
 "#;
     // println!("SOURCE CODE\n{}\n----\n", code);
@@ -39,12 +41,12 @@ foo(4,5);
     let mut parser = Parser::new(lexer.tokens);
     let nodes = parser.parse_program();
 
-    println!("AST\n");
-    match &nodes {
-        Ok(n) => print_ast(n.to_vec()),
-        Err(e) => println!("{}", e),
-    }
-    println!("\n----\n");
+    // println!("AST\n");
+    // match &nodes {
+    //     Ok(n) => print_ast(n.to_vec()),
+    //     Err(e) => println!("{}", e),
+    // }
+    // println!("\n----\n");
 
     println!("Type Checking\n");
     let mut tc = TypeChecker::new();
