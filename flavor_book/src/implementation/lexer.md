@@ -2,8 +2,8 @@
 
 Going back to the introduction to this chapter
 ([Implementation](./implementation.md)), we reviewed the inteded behavior of the
-lexer, not its specific implementation for NovaScript.  
-Here, in these sections, we will analyze the code behind NovaScript and the
+lexer, not its specific implementation for Flavor.  
+Here, in these sections, we will analyze the code behind Flavor and the
 reasonings that generated it.
 
 In this chapter, we will create a lexer that uses regular expression (regex) rules.  
@@ -16,7 +16,7 @@ This regex is then tested against the source code, and if it matches a string li
 ## Setup
 
 The creation of a lexer starts with the definition of the allowed syntax.
-In the case of Novascript, this step was done in the
+In the case of Flavor, this step was done in the
 [design](../design_of_the_language.md) phase.  
 Using the code as we imagined it, we can define this allowed syntax.
 For instance, notice the usage of the keyword `let`, the semicolon `;` and the
@@ -34,7 +34,7 @@ than their behaviors, and lastly we use them in the main code.
 The types definition for the lexer are straightforward; we need the allowed tokens and
 a struct to represent the concept of a token.
 
-> The code necessary to do so is found in [types](https://github.com/Mitra98t/NovaScript/blob/main/src/types.rs).
+> The code necessary to do so is found in [types](https://github.com/Mitra98t/Flavor/blob/main/src/types.rs).
 
 Let us first define the `TokenNames` to check for in the lexer.
 
@@ -83,7 +83,7 @@ Those elements can be useful to provide nice errors to the user.
 Once the definition of the useful types is done, we can start implementing the
 logic.  
 We will create a new file called `lexer.rs` ([lexer
-file](https://github.com/Mitra98t/NovaScript/blob/main/src/lexer.rs)) that we will use to create the lexer
+file](https://github.com/Mitra98t/Flavor/blob/main/src/lexer.rs)) that we will use to create the lexer
 class and its workings.
 
 To start let us define the structure for the lexer itself.
@@ -249,7 +249,7 @@ The body of the `lexe()` method consists only of the iterative call of the
 The tokens obtained in this manner are collected into the `tokens` property of
 the `lexer` to then be accessed.
 
-At this stage we can put together a simple `main()` ([main file](https://github.com/Mitra98t/NovaScript/blob/main/src/main.rs)) for the project to text the
+At this stage we can put together a simple `main()` ([main file](https://github.com/Mitra98t/Flavor/blob/main/src/main.rs)) for the project to text the
 correctness of the lexer
 
 ```rust,noplayground,no_run:main.rs

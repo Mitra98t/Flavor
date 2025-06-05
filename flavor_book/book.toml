@@ -2,7 +2,7 @@
 authors = []
 language = "en"
 src = "src"
-title = "Nova Script"
+title = "Flavor"
 
 [preprocessor.callouts]
 [preprocessor.codename]

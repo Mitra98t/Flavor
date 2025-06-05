@@ -1,12 +1,12 @@
-# NovaScript Imagining the First Design
+# Flavor Imagining the First Design
 
-The aim of this chapter is to produce an overview of the design of NovaScript.
+The aim of this chapter is to produce an overview of the design of Flavor.
 We will **not** dive into the implementation details or choices yet.
-Rather, we will imagine what we want NovaScript to look like.
+Rather, we will imagine what we want Flavor to look like.
 
 **Disclaimer**
 
-This chapter is not intended to show the syntax and semantics of NovaScript.
+This chapter is not intended to show the syntax and semantics of Flavor.
 We are just imagining the language proposing ideas and discussing them.
 
 > [!NOTE]
@@ -33,9 +33,9 @@ My intention in keeping it as is, basically without review, is to show the first
 ever ideas that went into the language aesthetics.
 The consequences of this first design are discussed in the next section.
 
-In the following piece of code we will explore the syntax for NovaScript.
+In the following piece of code we will explore the syntax for Flavor.
 
-```typescript:example.nova
+```typescript:example.flv
 // variable declaration with explicit type
 let x: int = 10;
 
@@ -90,7 +90,7 @@ Just by looking at this code, it is apparent that there are a lot of considerati
 
 ## Design choices and reasons
 
-When discussing the aesthetic choices behind NovaScript I will focus on
+When discussing the aesthetic choices behind Flavor I will focus on
 **consistency**.
 
 > The language is **consistent** if its behavior and syntax can be understood
@@ -129,7 +129,7 @@ I certainly can't say that one is absolutely better than the others; however, I 
 I like using the `!` to indicate a macro in the Rust example (`println!("...");`),
 because it immediately clarifies what is being used (macro vs function call).
 But I also find the simplicity of Lua (`print "..."`) very appealing.
-I'm confident that for **NovaScript** we will avoid taking inspiration from heavy languages like Java.
+I'm confident that for **Flavor** we will avoid taking inspiration from heavy languages like Java.
 
 ### Semicolons
 

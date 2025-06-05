@@ -224,7 +224,17 @@ impl TypeChecker {
                 let right_ty = self.check(right)?;
 
                 match operator.as_str() {
-                    "+" | "-" | "*" | "/" | ">" | "<" | ">=" | "<=" => {
+                    ">" | "<" | ">=" | "<=" => {
+                        if left_ty == Type::Int && right_ty == Type::Int {
+                            Ok(Type::Bool)
+                        } else {
+                            Err(format!(
+                                "Operator '{}' requires Integer operands but found left: {:?}, right: {:?}",
+                                operator, left_ty, right_ty
+                            ))
+                        }
+                    }
+                    "+" | "-" | "*" | "/" => {
                         if left_ty == Type::Int && right_ty == Type::Int {
                             Ok(Type::Int)
                         } else {

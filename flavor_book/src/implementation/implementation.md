@@ -2,7 +2,7 @@
 
 To start actually implementing the language we must discuss a bit about the
 elements that usually compose an engine.  
-This section will focus on a generic overview; the detail of the NovaScript
+This section will focus on a generic overview; the detail of the Flavor
 implementation are discussed in the dedicated chapters (i.e. [Lexer](./lexer.md)).
 
 A language's engine is usually divided into three sections:

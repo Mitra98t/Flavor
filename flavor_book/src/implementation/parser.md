@@ -36,8 +36,8 @@ accordingly.
 > This kind of parser is called [Recursive Descent Parser](https://en.wikipedia.org/wiki/Recursive_descent_parser)
 
 An important specification to do is related to the imperative structure of
-NovaScript.  
-In the NovaScript code we can define a sequence of instructions (statements separated by the
+Flavor.  
+In the Flavor code we can define a sequence of instructions (statements separated by the
 semicolon).
 This structure is reflected on the implementation of the parser, which will produce
 a vector of ASTs (one per statement).
@@ -46,7 +46,7 @@ a vector of ASTs (one per statement).
 
 As we have already done for the [lexer](./lexer.md), we will start by defining
 the necessary types to then use in the parser (the code is again found in
-[types](https://github.com/Mitra98t/NovaScript/blob/main/src/types.rs)).
+[types](https://github.com/Mitra98t/Flavor/blob/main/src/types.rs)).
 
 More precisely, we are going to define the AST nodes first.
 
@@ -83,7 +83,7 @@ apparent.
 Notice how the expression (`expr`) in the `LetDeclaration` node is itself of
 type `ASTNode`.
 
-We can then define the parser as the following struct (code found in [parser](https://github.com/Mitra98t/NovaScript/blob/main/src/parser.rs)):
+We can then define the parser as the following struct (code found in [parser](https://github.com/Mitra98t/Flavor/blob/main/src/parser.rs)):
 
 ```rust,no_run,noplayground:parser.rs
 pub struct Parser {
@@ -97,7 +97,7 @@ We just need the token list to check and the current position we are checking.
 The interesting part follows.  
 In the book we will report just a part of the parser highlighting the most
 important steps and elements.
-The entire code is found on the [GitHub of the project](https://github.com/Mitra98t/NovaScript) (entirely open source, feel free to _contribute_).  
+The entire code is found on the [GitHub of the project](https://github.com/Mitra98t/Flavor) (entirely open source, feel free to _contribute_).  
 We will define the entry point for the parser as a public method together with
 some helper functions.
 
@@ -155,7 +155,7 @@ Notice the signature of the method which will return the vector of ASTs.
 Now for the fun stuff, we will need the collection of parser functions to handle
 the different elements of the grammar.  
 First off, the `parse_statement()` method which is responsible for the parsing
-of all the different statements we support in NovaScript.
+of all the different statements we support in Flavor.
 
 ```rust,no_run,noplayground:parser.rs
 fn parse_statement(&mut self) -> ParseProduction {
@@ -224,7 +224,7 @@ The usage of the `?` is useful due to the return type of the parse functions.
 The functions will return a `Result` type; if an error is present, the `?` symbol
 allows to escalate it to the caller.
 
-> For those of you that are reimplementing NovaScript in other languages, this
+> For those of you that are reimplementing Flavor in other languages, this
 > escalation system can be achieved by using `throw` and `try-catch` in Java for
 > example.  
 > Custom made solutions are also possible if not encouraged.

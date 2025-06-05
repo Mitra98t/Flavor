@@ -68,7 +68,7 @@ quite new to the topic of programming languages.
 
 ## How to read this book
 
-The book is structured as a sort of _diary_ journaling the development of NovaScript.
+The book is structured as a sort of _diary_ journaling the development of Flavor.
 For that reason the chapter will not follow a logical structure, but instead
 will follow the production timeline.
 This means that we can go back to describing the design of the language at any moment
@@ -101,9 +101,9 @@ I will insert call-outs in the book, each one means something.
 > Add more of those here...
 
 **Syntax highlighting!**
-To highlight the syntax of NovaScript throughout the examples and the snippets
+To highlight the syntax of Flavor throughout the examples and the snippets
 in this book, we will use other languages' highlighting (at least until I figure
-out how to create custom highlighting for NovaScript) so it might be imperfect.
+out how to create custom highlighting for Flavor) so it might be imperfect.
 
 ## Some design choices
 
@@ -131,23 +131,23 @@ is not to create a production-ready, feature-rich and performant language; the
 goal is, instead, to face the challenges someone before me would have faced, and
 to come up with solutions that I am reasonably happy with.
 
-## NovaScript
+## Flavor
 
-**NovaScript**, the language protagonist of this book.  
+**Flavor**, the language protagonist of this book.  
 The name is not meant to represent anything; I just find it sci-fi enough so
 that is seems useful.
 
-NovaScript will be an interpreted language (unless I manange to write a compiler)
+Flavor will be an interpreted language (unless I manange to write a compiler)
 offering a strict typing system, type inference, function and lambdas, and --
 possibly -- classes and objects.
-I will admit that the features NovaScript will offer are to be decided and will
+I will admit that the features Flavor will offer are to be decided and will
 greatly depend on my implementation.
 The few listed prior are just what I _know_ that I want to tackle in this
 journey.
 
-The aesthetic of NovaScript will be designed with the concern of consistency
+The aesthetic of Flavor will be designed with the concern of consistency
 in mind -- going back to [the decision to use
 Rust in Some design choices](./introduction.md#some-design-choices).
 I have tried a not-so-small collection of languages, and I have found a series of
 elements that I like and don't like in the syntaxes I have learned.
-NovaScript's syntax will be based on the intersection of those elements.
+Flavor's syntax will be based on the intersection of those elements.

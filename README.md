@@ -1,15 +1,15 @@
-# NovaScript
+# Flavor
 
 <p align="center">
   <img src="./assets/simple_code.png" alt="Image 1" width="60%" style="display: inline-block; margin-right: 10px;" />
   <img src="./assets/aliasing_example.png" alt="Image 2" width="38%" style="display: inline-block;" />
 </p>
 
-_NovaScript_ is a programming language built to serve as a **learning platform** for
+_Flavor_ is a programming language built to serve as a **learning platform** for
 people interested in language development.
 
 The structure of the project is based on the collaborative creation of a
-programming language, _NovaScript_, documented in a sort of diary ([the Book](https://mitra98t.github.io/NovaScript/introduction.html)).
+programming language, _Flavor_, documented in a sort of diary ([the Book](https://mitra98t.github.io/Flavor/introduction.html)).
 
 ## Philosophy
 
@@ -20,10 +20,10 @@ implementation choices and hopefully learning something.
 The Book serves to show the process behind the creation of a language showing
 the challenges as they come up.
 
-## Try NovaScript!
+## Try Flavor!
 
 For now, the code is described as a string in the `main.rs` file.
-Simply run `cargo run` in the root of the repository to execute NovaScript.
+Simply run `cargo run` in the root of the repository to execute Flavor.
 
 ## Code Style
 
@@ -55,7 +55,7 @@ collaboration, please follow these guidelines:
 
 ### Book Contributions
 
-In the directory `./nova_script_book/` you will find [the Book](https://mitra98t.github.io/NovaScript/introduction.html).
+In the directory `./flavor_book/` you will find [the Book](https://mitra98t.github.io/Flavor/introduction.html).
 To **contribute** to the book you will need to have [mdbook](https://rust-lang.github.io/mdBook/).
 Mdbook is a website creator to build beautiful documentations website using
 markdown file.
@@ -72,8 +72,8 @@ serve --open`
 
 ### Code Contributions
 
-In the `./src/` directory you will find the source code for **NovaScript**.
-To run the **NovaScript** engine, simply run `cargo run` in the root directory
+In the `./src/` directory you will find the source code for **Flavor**.
+To run the **Flavor** engine, simply run `cargo run` in the root directory
 of the project.
 
 > You will need to have [Rust](https://www.rust-lang.org/it) on your system and [Cargo](https://doc.rust-lang.org/cargo/) to manage the project.
