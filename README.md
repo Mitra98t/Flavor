@@ -69,7 +69,11 @@ To successfully see the book while writing, you will need two plugins:
   file name or header in the code snippets
 
 Once everything has been installed, cd into the book directory and run `mdbook
-serve --open`
+serve --open` to see the book while writing.
+
+To **build the book** just run `mdbook build` inside the `./flavor_book/`
+directory.
+This way you will update the `./docs/` folder which will be used in the pages.
 
 ### Code Contributions
 
