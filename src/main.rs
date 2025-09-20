@@ -12,18 +12,14 @@ use typechecker::TypeChecker;
 use crate::types::print_ast;
 
 fn main() {
-    let code = r#"
-    let x: int = 10;
-    while ( x > 0 ) {
-        print(x);
-        x--;
-        if (x == 5) {
-            break;
-        } else {
-            print("x is not 5");
-        }
+    // read from file given in input
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <source_file>", args[0]);
+        std::process::exit(1);
     }
-"#;
+    let filename = &args[1];
+    let code = std::fs::read_to_string(filename).expect("Failed to read source file");
 
     let debug = false;
 
@@ -32,7 +28,7 @@ fn main() {
         println!("SOURCE CODE\n{code}\n----\n");
     }
 
-    let mut lexer = Lexer::new(code);
+    let mut lexer = Lexer::new(&code);
     lexer.lexe();
 
     if debug {
@@ -58,7 +54,6 @@ fn main() {
     let mut tc = TypeChecker::new();
     let nodes = nodes.unwrap();
     let typecheck_result = tc.check_program(&nodes);
-
     if debug {
         println!("Type Checking\n");
         if let Err(e) = &typecheck_result {
@@ -66,6 +61,7 @@ fn main() {
         }
         println!("\n----\n");
     }
+    typecheck_result.unwrap();
 
     let mut interpreter = Interpreter::new();
     interpreter.eval_program(&nodes).unwrap();

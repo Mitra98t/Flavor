@@ -92,7 +92,7 @@ pub enum Type {
 
 #[derive(Debug, Clone)]
 pub enum ASTNode {
-    Print(Box<Vec<ASTNode>>),
+    Print(Vec<ASTNode>),
     Body {
         nodes: Vec<ASTNode>,
     },
@@ -112,6 +112,11 @@ pub enum ASTNode {
     },
     FunctionDeclaration {
         name: String,
+        parameters: Vec<(String, Type)>,
+        return_type: Type,
+        body: Box<ASTNode>,
+    },
+    FunctionExpression {
         parameters: Vec<(String, Type)>,
         return_type: Type,
         body: Box<ASTNode>,
@@ -155,7 +160,7 @@ fn print_node(node: &ASTNode, indent: usize) {
     let indent_str = "  ".repeat(indent);
     match node {
         ASTNode::Print(args) => {
-            println!("{}Print:", indent_str);
+            println!("{indent_str}Print:");
             for arg in args.iter() {
                 print_node(arg, indent + 1);
             }
@@ -165,21 +170,21 @@ fn print_node(node: &ASTNode, indent: usize) {
             then_body,
             else_body,
         } => {
-            println!("{}If:", indent_str);
-            println!("{}  Guard:", indent_str);
+            println!("{indent_str}If:");
+            println!("{indent_str}  Guard:");
             print_node(guard, indent + 2);
-            println!("{}  Then:", indent_str);
+            println!("{indent_str}  Then:");
             print_node(then_body, indent + 2);
             if let Some(else_body) = else_body {
-                println!("{}  Else:", indent_str);
+                println!("{indent_str}  Else:");
                 print_node(else_body, indent + 2);
             }
         }
         ASTNode::While { guard, body } => {
-            println!("{}While:", indent_str);
-            println!("{}  Guard:", indent_str);
+            println!("{indent_str}While:");
+            println!("{indent_str}  Guard:");
             print_node(guard, indent + 2);
-            println!("{}  Body:", indent_str);
+            println!("{indent_str}  Body:");
             print_node(body, indent + 2);
         }
         ASTNode::Body { nodes } => {
@@ -188,10 +193,10 @@ fn print_node(node: &ASTNode, indent: usize) {
             }
         }
         ASTNode::Break => {
-            println!("{}Break", indent_str);
+            println!("{indent_str}Break");
         }
         ASTNode::Return(expr) => {
-            println!("{}Return:", indent_str);
+            println!("{indent_str}Return:");
             print_node(expr, indent + 2);
         }
         ASTNode::LetDeclaration {
@@ -199,14 +204,14 @@ fn print_node(node: &ASTNode, indent: usize) {
             var_type,
             expr,
         } => {
-            println!("{}LetDeclaration:", indent_str);
-            println!("{}  Identifier: {}", indent_str, identifier);
+            println!("{indent_str}LetDeclaration:");
+            println!("{indent_str}  Identifier: {identifier}");
             if let Some(t) = var_type {
-                println!("{}  Type: {:?}", indent_str, t);
+                println!("{indent_str}  Type: {t:?}");
             } else {
-                println!("{}  Type: None", indent_str);
+                println!("{indent_str}  Type: None");
             }
-            println!("{}  Expression:", indent_str);
+            println!("{indent_str}  Expression:");
             print_node(expr, indent + 2);
         }
         ASTNode::FunctionDeclaration {
@@ -215,50 +220,65 @@ fn print_node(node: &ASTNode, indent: usize) {
             return_type,
             body,
         } => {
-            println!("{}FunctionDeclaration:", indent_str);
-            println!("{}  Name: {}", indent_str, name);
-            println!("{}  Parameters:", indent_str);
+            println!("{indent_str}FunctionDeclaration:");
+            println!("{indent_str}  Name: {name}");
+            println!("{indent_str}  Parameters:");
             for p in parameters {
                 println!("{}    Name: {}", indent_str, p.0);
                 println!("{}    Type: {:?}", indent_str, p.1);
             }
-            println!("{}  Return Type: {:?}", indent_str, return_type);
+            println!("{indent_str}  Return Type: {return_type:?}");
+            print_node(body, indent + 2);
+        }
+        ASTNode::FunctionExpression {
+            parameters,
+            return_type,
+            body,
+        } => {
+            println!("{indent_str}FunctionExpression:");
+            println!("{indent_str}  Parameters:");
+            for p in parameters {
+                println!("{}    Name: {}", indent_str, p.0);
+                println!("{}    Type: {:?}", indent_str, p.1);
+            }
+            println!("{indent_str}  Return Type: {return_type:?}");
+            println!("{indent_str}  Body:");
             print_node(body, indent + 2);
         }
         ASTNode::FunctionCall { callee, arguments } => {
-            println!("{}FunctionCall:", indent_str);
-            println!("{}  Callee:", indent_str);
+            println!("{indent_str}FunctionCall:");
+            println!("{indent_str}  Callee:");
             print_node(callee, indent + 2);
-            println!("{}  Arguments:", indent_str);
+            println!("{indent_str}  Arguments:");
             for a in arguments {
                 print_node(a, indent + 2);
             }
         }
         ASTNode::UnitLiteral => {}
         ASTNode::NumberLiteral(value) => {
-            println!("{}NumberLiteral: {}", indent_str, value);
+            println!("{indent_str}NumberLiteral: {value}");
         }
         ASTNode::BoolLiteral(value) => {
-            println!("{}BoolLiteral: {}", indent_str, value);
+            println!("{indent_str}BoolLiteral: {value}");
         }
         ASTNode::StringLiteral(value) => {
-            println!("{}StringLiteral: {}", indent_str, value);
+            println!("{indent_str}StringLiteral: {value}");
         }
         ASTNode::Identifier(name) => {
-            println!("{}Identifier: {}", indent_str, name);
+            println!("{indent_str}Identifier: {name}");
         }
         ASTNode::ArrayLiteral(elements) => {
-            println!("{}ArrayLiteral:", indent_str);
+            println!("{indent_str}ArrayLiteral:");
             for (i, elem) in elements.iter().enumerate() {
-                println!("{}  Element {}:", indent_str, i);
+                println!("{indent_str}  Element {i}:");
                 print_node(elem, indent + 2);
             }
         }
         ASTNode::ArrayAccess { array, index } => {
-            println!("{}ArrayAccess", indent_str);
-            println!("{}  Array:", indent_str);
+            println!("{indent_str}ArrayAccess");
+            println!("{indent_str}  Array:");
             print_node(array, indent + 2);
-            println!("{}  Index:", indent_str);
+            println!("{indent_str}  Index:");
             print_node(index, indent + 2);
         }
         ASTNode::BinaryExpression {
@@ -266,10 +286,10 @@ fn print_node(node: &ASTNode, indent: usize) {
             operator,
             right,
         } => {
-            println!("{}BinaryExpression: {}", indent_str, operator);
-            println!("{}  Left:", indent_str);
+            println!("{indent_str}BinaryExpression: {operator}");
+            println!("{indent_str}  Left:");
             print_node(left, indent + 2);
-            println!("{}  Right:", indent_str);
+            println!("{indent_str}  Right:");
             print_node(right, indent + 2);
         }
         ASTNode::UnaryExpression {
@@ -277,17 +297,17 @@ fn print_node(node: &ASTNode, indent: usize) {
             operand,
             is_postfix,
         } => {
-            println!("{}UnaryExpression: {}", indent_str, operator);
+            println!("{indent_str}UnaryExpression: {operator}");
             println!(
                 "{}  Is Postfix: {}",
                 indent_str,
                 if *is_postfix { "true" } else { "false" }
             );
-            println!("{}  operand:", indent_str);
+            println!("{indent_str}  operand:");
             print_node(operand, indent + 2);
         }
         ASTNode::ExpressionStatement(expr) => {
-            println!("{}ExpressionStatement:", indent_str);
+            println!("{indent_str}ExpressionStatement:");
             print_node(expr, indent + 1);
         }
     }

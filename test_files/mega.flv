@@ -1,0 +1,111 @@
+fn make_multiplier(factor: int) -> (int) -> int {
+    fn multiply(value: int) -> int {
+        return value * factor;
+    }
+    return multiply;
+}
+
+fn make_affine_builder(scale: int) -> (int) -> (int) -> int {
+    fn with_offset(offset: int) -> (int) -> int {
+        let captured_scale = scale;
+        return fn (x: int) -> int {
+            return (x + offset) * captured_scale;
+        };
+    }
+    return with_offset;
+}
+
+fn pick_transform(flag: bool) -> (int) -> int {
+    if flag {
+        let identity: (int) -> int = fn (value: int) -> int {
+            return value;
+        };
+        return identity;
+    } else {
+        return fn (value: int) -> int {
+            return value * -1;
+        };
+    }
+}
+
+fn factorial(n: int) -> int {
+    if n <= 1 {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
+fn first_divisible_above(numbers: array(int), count: int, divisor: int, threshold: int) -> int {
+    let idx: int = 0;
+    while idx < count {
+        if numbers[idx] % divisor == 0 && numbers[idx] > threshold {
+            return numbers[idx];
+        }
+        idx++;
+    }
+    return -1;
+}
+
+let double = make_multiplier(2);
+let triple = make_multiplier(3);
+
+let builder = make_affine_builder(3);
+let plus_four_then_times_three = builder(4);
+
+let numbers: array(int) = [3, 14, 25, 9, 30];
+numbers[1]--;
+numbers[3] = numbers[3] + numbers[0];
+
+let first_big_multiple: int = first_divisible_above(numbers, 5, 3, 10);
+
+let idx: int = 0;
+let rolling_total: int = 0;
+while idx < 5 {
+    rolling_total = rolling_total + numbers[idx];
+    idx++;
+}
+
+let factorial_of_five: int = factorial(5);
+let picked_transform = pick_transform(false);
+let keep_transform = pick_transform(true);
+
+let stepper: (int) -> int = fn (value: int) -> int {
+    return value + 1;
+};
+
+let nested_transform = make_affine_builder(2)(5);
+let nested_result = nested_transform(7);
+
+let matrix: array(array(int)) = [[1, 2], [3, 4]];
+matrix[0][1]++;
+let diag_sum: int = matrix[0][0] + matrix[1][1];
+
+let bool_combo: bool = (factorial_of_five > 100) && false;
+
+let results = [
+    double(5),
+    triple(4),
+    plus_four_then_times_three(6),
+    picked_transform(8),
+    keep_transform(8),
+    stepper(10),
+    first_big_multiple,
+    rolling_total,
+    factorial_of_five,
+    nested_result,
+    diag_sum
+];
+
+print "Composite results: ",
+    results[0], ", ",
+    results[1], ", ",
+    results[2], ", ",
+    results[3], ", ",
+    results[4], ", ",
+    results[5], ", ",
+    results[6], ", ",
+    results[7], ", ",
+    results[8], ", ",
+    results[9], ", ",
+    results[10], " | bool check: ", bool_combo;

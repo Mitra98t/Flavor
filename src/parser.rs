@@ -99,7 +99,7 @@ impl Parser {
             }
         }
         self.expect_tok(TN::Semicolon)?;
-        Ok(ASTNode::Print(Box::new(expressions)))
+        Ok(ASTNode::Print(expressions))
     }
 
     fn parse_while(&mut self) -> ParseProduction {
@@ -200,6 +200,29 @@ impl Parser {
         Ok(params)
     }
 
+    fn parse_function_type_signature(&mut self) -> Result<Type, String> {
+        self.expect_tok(TN::LPar)?;
+        let mut param_types: Vec<Type> = Vec::new();
+        if self.current_tok().tok_name != TN::RPar {
+            loop {
+                let param_type = self.parse_type()?;
+                param_types.push(param_type);
+                if self.current_tok().tok_name == TN::Comma {
+                    self.consume_tok();
+                } else {
+                    break;
+                }
+            }
+        }
+        self.expect_tok(TN::RPar)?;
+        self.expect_tok(TN::SlimArrow)?;
+        let return_type = self.parse_type()?;
+        Ok(Type::Function {
+            param_types,
+            return_type: Box::new(return_type),
+        })
+    }
+
     fn parse_let_statement(&mut self) -> ParseProduction {
         self.expect_tok(TN::Let)?;
         let id_tok = self.expect_tok(TN::Identifier)?;
@@ -258,10 +281,8 @@ impl Parser {
     }
 
     fn parse_postfix_expression(&mut self) -> ParseProduction {
-        // Parse base expression
         let mut expr = self.parse_unary_expression()?;
 
-        // Loop to handle chaining postfix
         loop {
             match self.current_tok().tok_name {
                 TN::PlusPlus | TN::MinusMinus => {
@@ -271,10 +292,10 @@ impl Parser {
                         operator: op_tok.lexeme,
                         operand: Box::new(expr),
                         is_postfix: true,
-                    }
+                    };
                 }
                 TN::LSqu => {
-                    self.consume_tok(); // consume '['
+                    self.consume_tok();
                     let index_expr = self.parse_expression()?;
                     self.expect_tok(TN::RSqu)?;
                     expr = ASTNode::ArrayAccess {
@@ -282,9 +303,29 @@ impl Parser {
                         index: Box::new(index_expr),
                     };
                 }
+                TN::LPar => {
+                    self.consume_tok();
+                    let mut arguments = Vec::new();
+                    if self.current_tok().tok_name != TN::RPar {
+                        loop {
+                            arguments.push(self.parse_expression()?);
+                            if self.current_tok().tok_name == TN::Comma {
+                                self.consume_tok();
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                    self.expect_tok(TN::RPar)?;
+                    expr = ASTNode::FunctionCall {
+                        callee: Box::new(expr),
+                        arguments,
+                    };
+                }
                 _ => break,
             }
         }
+
         Ok(expr)
     }
 
@@ -326,6 +367,18 @@ impl Parser {
                 self.consume_tok();
                 Ok(ASTNode::StringLiteral(tok.lexeme))
             }
+            TN::Fn => {
+                self.consume_tok();
+                let parameters = self.parse_fn_parameters()?;
+                self.expect_tok(TN::SlimArrow)?;
+                let return_ty = self.parse_type()?;
+                let body = self.parse_body()?;
+                Ok(ASTNode::FunctionExpression {
+                    parameters,
+                    return_type: return_ty,
+                    body: Box::new(body),
+                })
+            }
             TN::LSqu => {
                 self.consume_tok();
                 let mut elements = Vec::new();
@@ -343,40 +396,44 @@ impl Parser {
                 self.expect_tok(TN::RSqu)?;
                 Ok(ASTNode::ArrayLiteral(elements))
             }
-            // Check for possible function call
             TN::Identifier => {
                 let name = self.expect_tok(TN::Identifier)?.lexeme;
-                if self.current_tok().tok_name == TN::LPar {
-                    self.consume_tok();
-                    let mut arguments = Vec::new();
-                    if self.current_tok().tok_name != TN::RPar {
-                        loop {
-                            let expr_arg = self.parse_expression()?;
-                            arguments.push(expr_arg);
-
-                            if self.current_tok().tok_name == TN::Comma {
-                                self.consume_tok();
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                    self.expect_tok(TN::RPar)?;
-                    Ok(ASTNode::FunctionCall {
-                        callee: Box::new(ASTNode::Identifier(name)),
-                        arguments,
-                    })
-                } else {
-                    Ok(ASTNode::Identifier(name))
-                }
+                Ok(ASTNode::Identifier(name))
             }
+            // Check for possible function call
+            // TN::Identifier => {
+            //     let name = self.expect_tok(TN::Identifier)?.lexeme;
+            //     if self.current_tok().tok_name == TN::LPar {
+            //         self.consume_tok();
+            //         let mut arguments = Vec::new();
+            //         if self.current_tok().tok_name != TN::RPar {
+            //             loop {
+            //                 let expr_arg = self.parse_expression()?;
+            //                 arguments.push(expr_arg);
+            //
+            //                 if self.current_tok().tok_name == TN::Comma {
+            //                     self.consume_tok();
+            //                 } else {
+            //                     break;
+            //                 }
+            //             }
+            //         }
+            //         self.expect_tok(TN::RPar)?;
+            //         Ok(ASTNode::FunctionCall {
+            //             callee: Box::new(ASTNode::Identifier(name)),
+            //             arguments,
+            //         })
+            //     } else {
+            //         Ok(ASTNode::Identifier(name))
+            //     }
+            // }
             TN::LPar => {
                 self.consume_tok();
                 let expr = self.parse_expression()?;
                 self.expect_tok(TN::RPar)?;
                 Ok(expr)
             }
-            _ => Err(format!("Unexpected token in expression: {:?}", tok)),
+            _ => Err(format!("Unexpected token in expression: {tok:?}")),
         }
     }
 
@@ -414,12 +471,13 @@ impl Parser {
                 self.expect_tok(TN::RPar)?;
                 Ok(Type::Array(Box::new(element_type)))
             }
+            TN::LPar => self.parse_function_type_signature(),
             _ => Err("Expected a type".to_string()),
         }
     }
 
     fn tokens_around_index(&self, index: usize, context: usize) -> String {
-        let start = if index >= context { index - context } else { 0 };
+        let start = index.saturating_sub(context);
         let end = if index + context < self.tokens.len() {
             index + context
         } else {

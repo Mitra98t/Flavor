@@ -1,8 +1,9 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
-use std::ops::ControlFlow;
+use std::rc::Rc;
 
-use crate::types::ASTNode as AST;
+use crate::types::{ASTNode as AST, Type};
 
 #[derive(Debug, Clone)]
 pub enum EvaluationType {
@@ -16,13 +17,39 @@ pub enum EvaluationType {
     Function {
         parameters: Vec<String>,
         body: Box<AST>,
-        env: HashMap<String, EvaluationType>,
+        env: Rc<RefCell<HashMap<String, EvaluationType>>>,
     },
 }
 
-impl EvaluationType {}
+impl EvaluationType {
+    fn matches_type(&self, expected: &Type) -> bool {
+        match (self, expected) {
+            (EvaluationType::Int(_), Type::Int) => true,
+            (EvaluationType::Bool(_), Type::Bool) => true,
+            (EvaluationType::String(_), Type::String) => true,
+            (EvaluationType::Unit, Type::Unit) => true,
+            (EvaluationType::Array(values), Type::Array(inner)) => {
+                values.iter().all(|value| value.matches_type(inner))
+            }
+            (EvaluationType::Function { .. }, Type::Function { .. }) => true,
+            (_, Type::Custom(_)) => true,
+            _ => false,
+        }
+    }
 
-impl fmt::Display for EvaluatinType {
+    fn type_name(&self) -> &'static str {
+        match self {
+            EvaluationType::Int(_) => "int",
+            EvaluationType::Bool(_) => "bool",
+            EvaluationType::String(_) => "string",
+            EvaluationType::Unit => "unit",
+            EvaluationType::Array(_) => "array",
+            EvaluationType::Function { .. } => "function",
+        }
+    }
+}
+
+impl fmt::Display for EvaluationType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EvaluationType::Int(value) => write!(f, "{value}"),
@@ -154,10 +181,20 @@ impl Interpreter {
                     EvalOutcome::Value(value) => value,
                     control_flow => return Ok(control_flow),
                 };
-                if let Some(_var_type) = var_type {
-                    // TODO: typecheching?
+                if let Some(var_type) = var_type {
+                    if !value.matches_type(var_type) {
+                        return Err(format!(
+                            "Type mismatch: variable '{}' declared as {:?} but value has runtime type {}",
+                            identifier,
+                            var_type,
+                            value.type_name()
+                        ));
+                    }
                 }
 
+                if let EvaluationType::Function { env, .. } = &value {
+                    env.borrow_mut().insert(identifier.clone(), value.clone());
+                }
                 self.env.insert(identifier.clone(), value);
                 Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
@@ -167,11 +204,13 @@ impl Interpreter {
                 return_type: _,
                 body,
             } => {
+                let closure_env = Rc::new(RefCell::new(self.env.clone()));
                 let func = EvaluationType::Function {
                     parameters: parameters.clone().iter().map(|p| p.clone().0).collect(),
                     body: Box::new(*body.clone()),
-                    env: self.env.clone(),
+                    env: Rc::clone(&closure_env),
                 };
+                closure_env.borrow_mut().insert(name.clone(), func.clone());
                 self.env.insert(name.clone(), func);
                 Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
@@ -182,7 +221,7 @@ impl Interpreter {
             AST::Break => Ok(EvalOutcome::Break),
             AST::FunctionCall { callee, arguments } => {
                 // TODO: rework error handling
-                let func = match self.eval(callee)? {
+                let (parameters, body, captured_env) = match self.eval(callee)? {
                     EvalOutcome::Value(EvaluationType::Function {
                         parameters,
                         body,
@@ -192,12 +231,12 @@ impl Interpreter {
                     control_flow => return Ok(control_flow),
                 };
 
-                if func.0.len() != arguments.len() {
+                if parameters.len() != arguments.len() {
                     return Err("Argument count mismatch".to_string());
                 }
 
-                let mut local_env = func.2.clone();
-                for (param, arg) in func.0.iter().zip(arguments) {
+                let mut local_env = captured_env.borrow().clone();
+                for (param, arg) in parameters.iter().zip(arguments) {
                     let arg_value = match self.eval(arg)? {
                         EvalOutcome::Value(value) => value,
                         control_flow => return Ok(control_flow),
@@ -207,7 +246,7 @@ impl Interpreter {
 
                 // Temporarily set the environment to the local one
                 let old_env = std::mem::replace(&mut self.env, local_env);
-                let result = self.eval(&func.1);
+                let result = self.eval(&body);
                 self.env = old_env; // Restore the previous environment
 
                 match result? {
@@ -215,6 +254,19 @@ impl Interpreter {
                     EvalOutcome::Value(value) => Ok(EvalOutcome::Value(value)),
                     EvalOutcome::Break => Err("Break outside of a loop".to_string()),
                 }
+            }
+            AST::FunctionExpression {
+                parameters,
+                return_type: _,
+                body,
+            } => {
+                let closure_env = Rc::new(RefCell::new(self.env.clone()));
+                let func = EvaluationType::Function {
+                    parameters: parameters.iter().map(|p| p.0.clone()).collect(),
+                    body: Box::new(*body.clone()),
+                    env: Rc::clone(&closure_env),
+                };
+                Ok(EvalOutcome::Value(func))
             }
             AST::UnitLiteral => Ok(EvalOutcome::Value(EvaluationType::Unit)),
             AST::NumberLiteral(value) => Ok(EvalOutcome::Value(EvaluationType::Int(
@@ -231,7 +283,7 @@ impl Interpreter {
                 .get(name)
                 .cloned()
                 .map(EvalOutcome::Value)
-                .ok_or_else(|| format!("Undefined variable: {}", name)),
+                .ok_or_else(|| format!("Undefined variable: {name}")),
             AST::ArrayLiteral(elements) => {
                 let mut values = Vec::with_capacity(elements.len());
                 for elem in elements {
@@ -317,8 +369,11 @@ impl Interpreter {
                                     EvaluationType::Array(arr) => {
                                         let idx = index_int as usize;
                                         if idx >= arr.len() {
-                                            // TODO: Resize array if needed??
-                                            return Err("Index out of bounds".to_string());
+                                            // TODO: For now arrays are fixed-size at runtime; reject implicit resizing.
+                                            let len = arr.len();
+                                            return Err(format!(
+                                                "Index {idx} out of bounds for array '{array_name}' of length {len}"
+                                            ));
                                         }
                                         arr[idx] = rt.clone();
                                         self.env.insert(array_name.clone(), array_values);
@@ -413,16 +468,22 @@ impl Interpreter {
                 is_postfix,
             } => match operator.as_str() {
                 "-" if !is_postfix => match self.eval(operand)? {
-                    EvaluationType::Int(value) => Ok(EvaluationType::Int(-value)),
-                    value => Err(format!(
+                    EvalOutcome::Value(EvaluationType::Int(value)) => {
+                        Ok(EvalOutcome::Value(EvaluationType::Int(-value)))
+                    }
+                    EvalOutcome::Value(value) => Err(format!(
                         "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {value:?}",
                     )),
+                    control_flow => Ok(control_flow),
                 },
                 "!" if !is_postfix => match self.eval(operand)? {
-                    EvaluationType::Bool(value) => Ok(EvaluationType::Bool(!value)),
-                    value => Err(format!(
+                    EvalOutcome::Value(EvaluationType::Bool(value)) => {
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(!value)))
+                    }
+                    EvalOutcome::Value(value) => Err(format!(
                         "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {value:?}",
                     )),
+                    control_flow => Ok(control_flow),
                 },
                 "++" | "--" => {
                     let delta: i64 = if operator == "++" { 1 } else { -1 };
@@ -451,9 +512,9 @@ impl Interpreter {
                             self.env.insert(name.clone(), new_value.clone());
 
                             if *is_postfix {
-                                Ok(old_value)
+                                Ok(EvalOutcome::Value(old_value))
                             } else {
-                                Ok(new_value)
+                                Ok(EvalOutcome::Value(new_value))
                             }
                         }
                         AST::ArrayAccess { array, index } => {
@@ -466,7 +527,10 @@ impl Interpreter {
                                 );
                             };
 
-                            let index_value = self.eval(index)?;
+                            let index_value = match self.eval(index)? {
+                                EvalOutcome::Value(value) => value,
+                                control_flow => return Ok(control_flow),
+                            };
                             let index_int = if let EvaluationType::Int(i) = index_value {
                                 i
                             } else {
@@ -513,9 +577,9 @@ impl Interpreter {
                             let new_value = EvaluationType::Int(new_int);
 
                             if *is_postfix {
-                                Ok(old_value)
+                                Ok(EvalOutcome::Value(old_value))
                             } else {
-                                Ok(new_value)
+                                Ok(EvalOutcome::Value(new_value))
                             }
                         }
                         _ => Err(
@@ -524,12 +588,12 @@ impl Interpreter {
                         ),
                     }
                 }
-                _ => {
-                    let operand_value = self.eval(operand)?;
-                    Err(format!(
+                _ => match self.eval(operand)? {
+                    EvalOutcome::Value(operand_value) => Err(format!(
                         "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {operand_value:?}",
-                    ))
-                }
+                    )),
+                    control_flow => Ok(control_flow),
+                },
             },
             AST::ExpressionStatement(expr) => self.eval(expr),
         }
