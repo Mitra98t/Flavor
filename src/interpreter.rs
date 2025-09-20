@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::ops::ControlFlow;
 
 use crate::types::ASTNode as AST;
 
@@ -21,7 +22,7 @@ pub enum EvaluationType {
 
 impl EvaluationType {}
 
-impl fmt::Display for EvaluationType {
+impl fmt::Display for EvaluatinType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EvaluationType::Int(value) => write!(f, "{value}"),
@@ -47,6 +48,13 @@ impl fmt::Display for EvaluationType {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum EvalOutcome {
+    Value(EvaluationType),
+    Break,
+    Return(EvaluationType),
+}
+
 pub struct Interpreter {
     pub env: HashMap<String, EvaluationType>,
 }
@@ -58,66 +66,100 @@ impl Interpreter {
         }
     }
 
-    pub fn eval_program(&mut self, nodes: &[AST]) -> Result<Vec<EvaluationType>, String> {
-        let mut result = vec![];
+    pub fn eval_program(&mut self, nodes: &[AST]) -> Result<EvalOutcome, String> {
+        let mut last_value = EvaluationType::Unit;
         for node in nodes {
-            result.push(self.eval(node)?);
+            match self.eval(node)? {
+                EvalOutcome::Value(val) => last_value = val,
+                control_flow => return Ok(control_flow),
+            }
         }
-        Ok(result)
+        Ok(EvalOutcome::Value(last_value))
     }
 
-    fn eval(&mut self, node: &AST) -> Result<EvaluationType, String> {
+    fn eval(&mut self, node: &AST) -> Result<EvalOutcome, String> {
         match node {
             AST::Print(exprs) => {
                 let mut outputs = Vec::new();
                 for expr in exprs.iter() {
-                    let eval = self.eval(expr)?;
-                    outputs.push(format!("{eval}"));
+                    match self.eval(expr)? {
+                        EvalOutcome::Value(val) => outputs.push(val.to_string()),
+                        control_flow => {
+                            return Ok(control_flow);
+                        }
+                    }
                 }
                 println!("{}", outputs.join(""));
-                Ok(EvaluationType::Unit)
+                Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
             AST::Body { nodes } => {
                 let mut result = EvaluationType::Unit;
                 for n in nodes {
-                    result = self.eval(n)?;
+                    match self.eval(n)? {
+                        EvalOutcome::Value(val) => result = val,
+                        control_flow => return Ok(control_flow),
+                    }
                 }
-                Ok(result)
+                Ok(EvalOutcome::Value(result))
             }
             AST::If {
                 guard,
                 then_body,
                 else_body,
             } => {
-                let guard_value = self.eval(guard)?;
+                let guard_value = match self.eval(guard)? {
+                    EvalOutcome::Value(val) => val,
+                    control_flow => return Ok(control_flow),
+                };
 
                 if let EvaluationType::Bool(true) = guard_value {
                     self.eval(then_body)
                 } else if let Some(else_body) = else_body {
                     self.eval(else_body)
                 } else {
-                    Ok(EvaluationType::Unit)
+                    Ok(EvalOutcome::Value(EvaluationType::Unit))
                 }
             }
             AST::While { guard, body } => {
                 let mut result = EvaluationType::Unit;
-                while let EvaluationType::Bool(true) = self.eval(guard)? {
-                    result = self.eval(body)?;
-                    // handle break statement
+                loop {
+                    let guard_value = match self.eval(guard)? {
+                        EvalOutcome::Value(val) => val,
+                        control_flow => return Ok(control_flow),
+                    };
+                    match guard_value {
+                        EvaluationType::Bool(true) => match self.eval(body)? {
+                            EvalOutcome::Value(value) => {
+                                result = value;
+                            }
+                            EvalOutcome::Break => {
+                                break;
+                            }
+                            EvalOutcome::Return(val) => return Ok(EvalOutcome::Return(val)),
+                        },
+                        EvaluationType::Bool(false) => break,
+                        _ => {
+                            return Err("While guard must be evaluated to boolean".to_string());
+                        }
+                    }
                 }
-                Ok(result)
+                Ok(EvalOutcome::Value(result))
             }
             AST::LetDeclaration {
                 identifier,
                 var_type,
                 expr,
             } => {
-                let value = self.eval(expr)?;
+                let value = match self.eval(expr)? {
+                    EvalOutcome::Value(value) => value,
+                    control_flow => return Ok(control_flow),
+                };
                 if let Some(_var_type) = var_type {
-                    // TODO: Type checking?
+                    // TODO: typecheching?
                 }
+
                 self.env.insert(identifier.clone(), value);
-                Ok(EvaluationType::Unit)
+                Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
             AST::FunctionDeclaration {
                 name,
@@ -131,25 +173,23 @@ impl Interpreter {
                     env: self.env.clone(),
                 };
                 self.env.insert(name.clone(), func);
-                Ok(EvaluationType::Unit)
+                Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
-            AST::Return(expr) => {
-                let value = self.eval(expr)?;
-                Ok(value)
-            }
-            AST::Break => {
-                // Handle break logic, if needed
-                Ok(EvaluationType::Unit)
-            }
+            AST::Return(expr) => match self.eval(expr)? {
+                EvalOutcome::Value(value) => Ok(EvalOutcome::Return(value)),
+                contorl_flow => Ok(contorl_flow),
+            },
+            AST::Break => Ok(EvalOutcome::Break),
             AST::FunctionCall { callee, arguments } => {
                 // TODO: rework error handling
                 let func = match self.eval(callee)? {
-                    EvaluationType::Function {
+                    EvalOutcome::Value(EvaluationType::Function {
                         parameters,
                         body,
                         env,
-                    } => (parameters, body, env),
-                    _ => return Err("Callee is not a function".to_string()),
+                    }) => (parameters, body, env),
+                    EvalOutcome::Value(_) => return Err("Callee is not a function".to_string()),
+                    control_flow => return Ok(control_flow),
                 };
 
                 if func.0.len() != arguments.len() {
@@ -158,7 +198,10 @@ impl Interpreter {
 
                 let mut local_env = func.2.clone();
                 for (param, arg) in func.0.iter().zip(arguments) {
-                    let arg_value = self.eval(arg)?;
+                    let arg_value = match self.eval(arg)? {
+                        EvalOutcome::Value(value) => value,
+                        control_flow => return Ok(control_flow),
+                    };
                     local_env.insert(param.clone(), arg_value);
                 }
 
@@ -167,27 +210,47 @@ impl Interpreter {
                 let result = self.eval(&func.1);
                 self.env = old_env; // Restore the previous environment
 
-                result
+                match result? {
+                    EvalOutcome::Return(value) => Ok(EvalOutcome::Value(value)),
+                    EvalOutcome::Value(value) => Ok(EvalOutcome::Value(value)),
+                    EvalOutcome::Break => Err("Break outside of a loop".to_string()),
+                }
             }
-            AST::UnitLiteral => Ok(EvaluationType::Unit),
-            AST::NumberLiteral(value) => Ok(EvaluationType::Int(value.parse().unwrap())),
-            AST::StringLiteral(value) => Ok(EvaluationType::String(value.clone())),
-            AST::BoolLiteral(value) => Ok(EvaluationType::Bool(value.parse().unwrap())),
+            AST::UnitLiteral => Ok(EvalOutcome::Value(EvaluationType::Unit)),
+            AST::NumberLiteral(value) => Ok(EvalOutcome::Value(EvaluationType::Int(
+                value.parse().unwrap(),
+            ))),
+            AST::StringLiteral(value) => {
+                Ok(EvalOutcome::Value(EvaluationType::String(value.clone())))
+            }
+            AST::BoolLiteral(value) => Ok(EvalOutcome::Value(EvaluationType::Bool(
+                value.parse().unwrap(),
+            ))),
             AST::Identifier(name) => self
                 .env
                 .get(name)
                 .cloned()
+                .map(EvalOutcome::Value)
                 .ok_or_else(|| format!("Undefined variable: {}", name)),
             AST::ArrayLiteral(elements) => {
                 let mut values = Vec::with_capacity(elements.len());
                 for elem in elements {
-                    values.push(self.eval(elem)?);
+                    match self.eval(elem)? {
+                        EvalOutcome::Value(value) => values.push(value),
+                        control_flow => return Ok(control_flow),
+                    }
                 }
-                Ok(EvaluationType::Array(values))
+                Ok(EvalOutcome::Value(EvaluationType::Array(values)))
             }
             AST::ArrayAccess { array, index } => {
-                let array_value = self.eval(array)?;
-                let index_value = self.eval(index)?;
+                let array_value = match self.eval(array)? {
+                    EvalOutcome::Value(value) => value,
+                    control_flow => return Ok(control_flow),
+                };
+                let index_value = match self.eval(index)? {
+                    EvalOutcome::Value(value) => value,
+                    control_flow => return Ok(control_flow),
+                };
                 match (array_value, index_value) {
                     (EvaluationType::Array(arr), EvaluationType::Int(idx)) => {
                         if idx < 0 {
@@ -195,6 +258,7 @@ impl Interpreter {
                         }
                         arr.get(idx as usize)
                             .cloned()
+                            .map(EvalOutcome::Value)
                             .ok_or_else(|| "Index out of bounds".to_string())
                     }
                     _ => Err("Invalid array access".to_string()),
@@ -205,8 +269,14 @@ impl Interpreter {
                 operator,
                 right,
             } => {
-                let left_value = self.eval(left)?;
-                let right_value = self.eval(right)?;
+                let left_value = match self.eval(left)? {
+                    EvalOutcome::Value(value) => value,
+                    control_flow => return Ok(control_flow),
+                };
+                let right_value = match self.eval(right)? {
+                    EvalOutcome::Value(value) => value,
+                    control_flow => return Ok(control_flow),
+                };
 
                 match (left_value, right_value, operator.as_str()) {
                     // Assignment
@@ -214,7 +284,7 @@ impl Interpreter {
                         match &**left {
                             AST::Identifier(name) => {
                                 self.env.insert(name.clone(), rt.clone());
-                                Ok(rt)
+                                Ok(EvalOutcome::Value(rt))
                             }
                             AST::ArrayAccess { array, index } => {
                                 let array_name = if let AST::Identifier(name) = &**array {
@@ -223,7 +293,10 @@ impl Interpreter {
                                     return Err("Left side of assignment must be an identifier or array access".to_string());
                                 };
 
-                                let index_value = self.eval(index)?;
+                                let index_value = match self.eval(index)? {
+                                    EvalOutcome::Value(value) => value,
+                                    control_flow => return Ok(control_flow),
+                                };
                                 let index_int = if let EvaluationType::Int(i) = index_value {
                                     i
                                 } else {
@@ -249,7 +322,7 @@ impl Interpreter {
                                         }
                                         arr[idx] = rt.clone();
                                         self.env.insert(array_name.clone(), array_values);
-                                        Ok(rt)
+                                        Ok(EvalOutcome::Value(rt))
                                     }
                                     _ => Err(format!("{array_name} is not an array")),
                                 }
@@ -262,61 +335,61 @@ impl Interpreter {
                     }
                     // Integer arithmetic
                     (EvaluationType::Int(l), EvaluationType::Int(r), "+") => {
-                        Ok(EvaluationType::Int(l + r))
+                        Ok(EvalOutcome::Value(EvaluationType::Int(l + r)))
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "-") => {
-                        Ok(EvaluationType::Int(l - r))
+                        Ok(EvalOutcome::Value(EvaluationType::Int(l - r)))
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "*") => {
-                        Ok(EvaluationType::Int(l * r))
+                        Ok(EvalOutcome::Value(EvaluationType::Int(l * r)))
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "/") => {
                         if r == 0 {
                             Err("Division by zero".to_string())
                         } else {
-                            Ok(EvaluationType::Int(l / r))
+                            Ok(EvalOutcome::Value(EvaluationType::Int(l / r)))
                         }
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "%") => {
                         if r == 0 {
                             Err("Modulo by zero".to_string())
                         } else {
-                            Ok(EvaluationType::Int(l % r))
+                            Ok(EvalOutcome::Value(EvaluationType::Int(l % r)))
                         }
                     }
 
                     // Integer comparisons
                     (EvaluationType::Int(l), EvaluationType::Int(r), "==") => {
-                        Ok(EvaluationType::Bool(l == r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "!=") => {
-                        Ok(EvaluationType::Bool(l != r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "<") => {
-                        Ok(EvaluationType::Bool(l < r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l < r)))
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "<=") => {
-                        Ok(EvaluationType::Bool(l <= r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l <= r)))
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), ">") => {
-                        Ok(EvaluationType::Bool(l > r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l > r)))
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), ">=") => {
-                        Ok(EvaluationType::Bool(l >= r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l >= r)))
                     }
 
                     // Boolean logic
                     (EvaluationType::Bool(l), EvaluationType::Bool(r), "&&") => {
-                        Ok(EvaluationType::Bool(l && r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l && r)))
                     }
                     (EvaluationType::Bool(l), EvaluationType::Bool(r), "||") => {
-                        Ok(EvaluationType::Bool(l || r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l || r)))
                     }
                     (EvaluationType::Bool(l), EvaluationType::Bool(r), "==") => {
-                        Ok(EvaluationType::Bool(l == r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
                     }
                     (EvaluationType::Bool(l), EvaluationType::Bool(r), "!=") => {
-                        Ok(EvaluationType::Bool(l != r))
+                        Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
                     }
 
                     // String concatenation
