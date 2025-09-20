@@ -13,9 +13,16 @@ use crate::types::print_ast;
 
 fn main() {
     let code = r#"
-    let x: array(int) = [2,2,3];
-    x[0] = 5;
-    print x[0], x[1], x[2];
+    let x: int = 10;
+    while ( x > 0 ) {
+        print(x);
+        x--;
+        if (x == 5) {
+            break;
+        } else {
+            print("x is not 5");
+        }
+    }
 "#;
 
     let debug = false;
@@ -50,9 +57,11 @@ fn main() {
 
     let mut tc = TypeChecker::new();
     let nodes = nodes.unwrap();
+    let typecheck_result = tc.check_program(&nodes);
+
     if debug {
         println!("Type Checking\n");
-        if let Err(e) = tc.check_program(&nodes) {
+        if let Err(e) = &typecheck_result {
             println!("{e}")
         }
         println!("\n----\n");

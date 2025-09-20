@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 use crate::types::ASTNode as AST;
 
@@ -19,6 +20,32 @@ pub enum EvaluationType {
 }
 
 impl EvaluationType {}
+
+impl fmt::Display for EvaluationType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EvaluationType::Int(value) => write!(f, "{value}"),
+            EvaluationType::Bool(value) => write!(f, "{value}"),
+            EvaluationType::String(value) => {
+                if let Some(stripped) = value.strip_prefix('"').and_then(|v| v.strip_suffix('"')) {
+                    write!(f, "{stripped}")
+                } else {
+                    write!(f, "{value}")
+                }
+            }
+            EvaluationType::Unit => write!(f, "<unit>"),
+            EvaluationType::Array(values) => {
+                let formatted = values
+                    .iter()
+                    .map(|value| value.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "[{formatted}]")
+            }
+            EvaluationType::Function { .. } => write!(f, "<function>"),
+        }
+    }
+}
 
 pub struct Interpreter {
     pub env: HashMap<String, EvaluationType>,
@@ -45,9 +72,9 @@ impl Interpreter {
                 let mut outputs = Vec::new();
                 for expr in exprs.iter() {
                     let eval = self.eval(expr)?;
-                    outputs.push(format!("{eval:?}"));
+                    outputs.push(format!("{eval}"));
                 }
-                println!("{}", outputs.join(" "));
+                println!("{}", outputs.join(""));
                 Ok(EvaluationType::Unit)
             }
             AST::Body { nodes } => {
@@ -183,7 +210,7 @@ impl Interpreter {
 
                 match (left_value, right_value, operator.as_str()) {
                     // Assignment
-                    (lt, rt, "=") => {
+                    (_lt, rt, "=") => {
                         match &**left {
                             AST::Identifier(name) => {
                                 self.env.insert(name.clone(), rt.clone());
@@ -210,7 +237,7 @@ impl Interpreter {
                                 let mut array_values = self
                                     .env
                                     .get(array_name)
-                                    .ok_or_else(|| format!("Undefined variable: {}", array_name))?
+                                    .ok_or_else(|| format!("Undefined variable: {array_name}"))?
                                     .clone();
 
                                 match &mut array_values {
@@ -304,39 +331,133 @@ impl Interpreter {
                     // }
 
                     // Fallback
-                    (l, r, op) => Err(format!(
-                        "Unsupported binary operation: {:?} {} {:?}",
-                        l, op, r
-                    )),
+                    (l, r, op) => Err(format!("Unsupported binary operation: {l:?} {op} {r:?}",)),
                 }
             }
             AST::UnaryExpression {
                 operator,
                 operand,
                 is_postfix,
-            } => {
-                let operand_value = self.eval(operand)?;
-
-                match (operator.as_str(), operand_value.clone(), *is_postfix) {
-                    // Prefix integer negation
-                    ("-", EvaluationType::Int(value), false) => Ok(EvaluationType::Int(-value)),
-                    // Prefix boolean NOT
-                    ("!", EvaluationType::Bool(value), false) => Ok(EvaluationType::Bool(!value)),
-                    // Prefix increment
-                    ("++", EvaluationType::Int(value), false) => Ok(EvaluationType::Int(value + 1)),
-                    // Prefix decrement
-                    ("--", EvaluationType::Int(value), false) => Ok(EvaluationType::Int(value - 1)),
-                    // Postfix increment
-                    ("++", EvaluationType::Int(value), true) => Ok(EvaluationType::Int(value)),
-                    // Postfix decrement
-                    ("--", EvaluationType::Int(value), true) => Ok(EvaluationType::Int(value)),
-                    // Add more cases as needed for floats, etc.
-                    _ => Err(format!(
-                        "Unsupported unary operation: {} (postfix: {}) on {:?}",
-                        operator, is_postfix, operand_value
+            } => match operator.as_str() {
+                "-" if !is_postfix => match self.eval(operand)? {
+                    EvaluationType::Int(value) => Ok(EvaluationType::Int(-value)),
+                    value => Err(format!(
+                        "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {value:?}",
                     )),
+                },
+                "!" if !is_postfix => match self.eval(operand)? {
+                    EvaluationType::Bool(value) => Ok(EvaluationType::Bool(!value)),
+                    value => Err(format!(
+                        "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {value:?}",
+                    )),
+                },
+                "++" | "--" => {
+                    let delta: i64 = if operator == "++" { 1 } else { -1 };
+
+                    match &**operand {
+                        AST::Identifier(name) => {
+                            let current_value = self
+                                .env
+                                .get(name)
+                                .cloned()
+                                .ok_or_else(|| format!("Undefined variable: {name}"))?;
+
+                            let old_int = match current_value {
+                                EvaluationType::Int(value) => value,
+                                other => {
+                                    return Err(format!(
+                                        "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
+                                    ));
+                                }
+                            };
+
+                            let new_int = old_int + delta;
+                            let new_value = EvaluationType::Int(new_int);
+                            let old_value = EvaluationType::Int(old_int);
+
+                            self.env.insert(name.clone(), new_value.clone());
+
+                            if *is_postfix {
+                                Ok(old_value)
+                            } else {
+                                Ok(new_value)
+                            }
+                        }
+                        AST::ArrayAccess { array, index } => {
+                            let array_name = if let AST::Identifier(name) = &**array {
+                                name
+                            } else {
+                                return Err(
+                                    "Left side of increment must be an identifier or array access"
+                                        .to_string(),
+                                );
+                            };
+
+                            let index_value = self.eval(index)?;
+                            let index_int = if let EvaluationType::Int(i) = index_value {
+                                i
+                            } else {
+                                return Err("Array index must be an integer".to_string());
+                            };
+
+                            if index_int < 0 {
+                                return Err("Negative array index".to_string());
+                            }
+
+                            let mut array_values = self
+                                .env
+                                .get(array_name)
+                                .ok_or_else(|| format!("Undefined variable: {array_name}"))?
+                                .clone();
+
+                            let (old_int, new_int) = match &mut array_values {
+                                EvaluationType::Array(arr) => {
+                                    let idx = index_int as usize;
+                                    if idx >= arr.len() {
+                                        return Err("Index out of bounds".to_string());
+                                    }
+
+                                    match arr.get_mut(idx) {
+                                        Some(EvaluationType::Int(element)) => {
+                                            let old_value = *element;
+                                            *element += delta;
+                                            (old_value, *element)
+                                        }
+                                        Some(other) => {
+                                            return Err(format!(
+                                                "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
+                                            ));
+                                        }
+                                        None => unreachable!(),
+                                    }
+                                }
+                                _ => return Err(format!("{array_name} is not an array")),
+                            };
+
+                            self.env.insert(array_name.clone(), array_values);
+
+                            let old_value = EvaluationType::Int(old_int);
+                            let new_value = EvaluationType::Int(new_int);
+
+                            if *is_postfix {
+                                Ok(old_value)
+                            } else {
+                                Ok(new_value)
+                            }
+                        }
+                        _ => Err(
+                            "Operand must be an identifier or array access for increment/decrement"
+                                .to_string(),
+                        ),
+                    }
                 }
-            }
+                _ => {
+                    let operand_value = self.eval(operand)?;
+                    Err(format!(
+                        "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {operand_value:?}",
+                    ))
+                }
+            },
             AST::ExpressionStatement(expr) => self.eval(expr),
         }
     }
