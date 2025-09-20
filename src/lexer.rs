@@ -44,6 +44,7 @@ impl Lexer {
         let mut length_of_tok: usize = 0;
 
         let patterns = [
+            (r"print", TN::Print),
             (r"let", TN::Let),
             (r"fn", TN::Fn),
             (r"alias", TN::Alias),
@@ -51,6 +52,7 @@ impl Lexer {
             (r"float", TN::Float),
             (r"string", TN::String),
             (r"bool", TN::Bool),
+            (r"array", TN::Array),
             (r"return", TN::Return),
             (r"break", TN::Break),
             (r"if", TN::If),

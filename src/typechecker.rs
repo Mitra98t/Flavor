@@ -53,6 +53,54 @@ impl TypeChecker {
     /// * `node`:
     fn check(&mut self, node: &ASTNode) -> Result<(Type, bool), String> {
         match node {
+            ASTNode::Print(args) => {
+                for arg in args.clone().into_iter() {
+                    let _ = self.check(&arg)?;
+                }
+                Ok((Type::Unit, false))
+            }
+            ASTNode::ArrayLiteral(elements) => {
+                if elements.is_empty() {
+                    return Ok((Type::Array(Box::new(Type::Unit)), false));
+                }
+
+                let mut element_type = None;
+
+                for elem in elements {
+                    let (elem_ty, _returns) = self.check(elem)?;
+                    if let Some(ref t) = element_type {
+                        if *t != elem_ty {
+                            return Err(format!(
+                                "Array elements must be of the same type, found {:?} and {:?}",
+                                t, elem_ty
+                            ));
+                        }
+                    } else {
+                        element_type = Some(elem_ty);
+                    }
+                }
+
+                Ok((Type::Array(Box::new(element_type.unwrap())), false))
+            }
+            ASTNode::ArrayAccess { array, index } => {
+                let (array_ty, _array_ret) = self.check(array)?;
+                let (index_ty, _index_ret) = self.check(index)?;
+
+                if index_ty != Type::Int {
+                    return Err(format!(
+                        "Array index must be of type Int, found {:?}",
+                        index_ty
+                    ));
+                }
+
+                match array_ty {
+                    Type::Array(elem_type) => Ok((*elem_type, false)),
+                    _ => Err(format!(
+                        "Cannot access elements of non-array type {:?}",
+                        array_ty
+                    )),
+                }
+            }
             ASTNode::LetDeclaration {
                 identifier,
                 var_type,
@@ -70,6 +118,7 @@ impl TypeChecker {
                     Ok((declared_ty.clone(), false))
                 } else {
                     self.insert(identifier.clone(), expr_ty.0.clone());
+
                     Ok((expr_ty.0, false))
                 }
             }
@@ -278,6 +327,15 @@ impl TypeChecker {
                 let (right_ty, _right_ret) = self.check(right)?;
 
                 match operator.as_str() {
+                    "=" => {
+                        if left_ty != right_ty {
+                            return Err(format!(
+                                "Type mismatch in assignment: left is {:?}, right is {:?}",
+                                left_ty, right_ty
+                            ));
+                        }
+                        Ok((left_ty, false))
+                    }
                     ">" | "<" | ">=" | "<=" => {
                         if left_ty == Type::Int && right_ty == Type::Int {
                             Ok((Type::Bool, false))
@@ -318,10 +376,9 @@ impl TypeChecker {
                             ))
                         }
                     }
-                    _ => Err(format!("Unknown operator '{}'", operator)),
+                    _ => Err(format!("Unknown binary operator '{}'", operator)),
                 }
             }
-            _ => Err(format!("Type checking not implemented for node {:?}", node)),
         }
     }
 }

@@ -8,6 +8,9 @@ pub struct Token {
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum TokenName {
+    // Built-in Functions
+    Print,
+
     // Keywords
     Let,
     Fn,
@@ -24,6 +27,7 @@ pub enum TokenName {
     Bool,
     String,
     Nothing,
+    Array,
 
     // Symbols
     Dot,
@@ -78,7 +82,7 @@ pub enum Type {
     String,
     Unit,
     Custom(String),
-    // Array(Box<Type>),
+    Array(Box<Type>),
     Function {
         param_types: Vec<Type>,
         return_type: Box<Type>,
@@ -88,6 +92,7 @@ pub enum Type {
 
 #[derive(Debug, Clone)]
 pub enum ASTNode {
+    Print(Box<Vec<ASTNode>>),
     Body {
         nodes: Vec<ASTNode>,
     },
@@ -122,6 +127,7 @@ pub enum ASTNode {
     StringLiteral(String),
     BoolLiteral(String),
     Identifier(String),
+    ArrayLiteral(Vec<ASTNode>),
     ArrayAccess {
         array: Box<ASTNode>,
         index: Box<ASTNode>,
@@ -148,6 +154,12 @@ pub fn print_ast(ast: Vec<ASTNode>) {
 fn print_node(node: &ASTNode, indent: usize) {
     let indent_str = "  ".repeat(indent);
     match node {
+        ASTNode::Print(args) => {
+            println!("{}Print:", indent_str);
+            for arg in args.iter() {
+                print_node(arg, indent + 1);
+            }
+        }
         ASTNode::If {
             guard,
             then_body,
@@ -234,6 +246,13 @@ fn print_node(node: &ASTNode, indent: usize) {
         }
         ASTNode::Identifier(name) => {
             println!("{}Identifier: {}", indent_str, name);
+        }
+        ASTNode::ArrayLiteral(elements) => {
+            println!("{}ArrayLiteral:", indent_str);
+            for (i, elem) in elements.iter().enumerate() {
+                println!("{}  Element {}:", indent_str, i);
+                print_node(elem, indent + 2);
+            }
         }
         ASTNode::ArrayAccess { array, index } => {
             println!("{}ArrayAccess", indent_str);

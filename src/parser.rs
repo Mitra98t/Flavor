@@ -34,6 +34,11 @@ impl Parser {
             self.consume_tok();
             Ok(tok)
         } else {
+            println!(
+                "Error at token index {}: ... {} ...",
+                self.pos,
+                self.tokens_around_index(self.pos, 3)
+            );
             Err(format!(
                 "Expected token {:?}, found {:?} ('{}')",
                 expected, tok.tok_name, tok.lexeme
@@ -46,6 +51,7 @@ impl Parser {
     /// * `token`: token to evaluate the precedence of
     fn get_precedence(token: &Token) -> Option<u8> {
         match token.tok_name {
+            TN::Assign => Some(10),
             TN::Times | TN::Div | TN::Percent => Some(150),
             TN::Plus | TN::Minus => Some(120),
             TN::Gt | TN::Lt | TN::Ge | TN::Le => Some(100),
@@ -66,6 +72,7 @@ impl Parser {
 
     fn parse_statement(&mut self) -> ParseProduction {
         match self.current_tok().tok_name {
+            TN::Print => self.parse_print_statement(),
             TN::Let => self.parse_let_statement(),
             TN::Fn => self.parse_function_declaration(),
             TN::If => self.parse_if(),
@@ -73,9 +80,26 @@ impl Parser {
             TN::Return => self.parse_return(),
             TN::Break => self.parse_break(),
             TN::LBra => self.parse_body(),
+            TN::Identifier => self.parse_expression_statement(),
             // TODO: aliasing, ecc...
             _ => self.parse_expression_statement(),
         }
+    }
+
+    fn parse_print_statement(&mut self) -> ParseProduction {
+        self.expect_tok(TN::Print)?;
+        let mut expressions = vec![];
+        while self.current_tok().tok_name != TN::Semicolon {
+            let expr = self.parse_expression()?;
+            expressions.push(expr);
+            if self.current_tok().tok_name == TN::Comma {
+                self.consume_tok();
+            } else {
+                break;
+            }
+        }
+        self.expect_tok(TN::Semicolon)?;
+        Ok(ASTNode::Print(Box::new(expressions)))
     }
 
     fn parse_while(&mut self) -> ParseProduction {
@@ -302,6 +326,23 @@ impl Parser {
                 self.consume_tok();
                 Ok(ASTNode::StringLiteral(tok.lexeme))
             }
+            TN::LSqu => {
+                self.consume_tok();
+                let mut elements = Vec::new();
+                if self.current_tok().tok_name != TN::RSqu {
+                    loop {
+                        let elem = self.parse_expression()?;
+                        elements.push(elem);
+                        if self.current_tok().tok_name == TN::Comma {
+                            self.consume_tok();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect_tok(TN::RSqu)?;
+                Ok(ASTNode::ArrayLiteral(elements))
+            }
             // Check for possible function call
             TN::Identifier => {
                 let name = self.expect_tok(TN::Identifier)?.lexeme;
@@ -366,7 +407,29 @@ impl Parser {
                 self.consume_tok();
                 Ok(Type::Custom(id))
             }
+            TN::Array => {
+                self.consume_tok(); // consume 'Array'
+                self.expect_tok(TN::LPar)?;
+                let element_type = self.parse_type()?;
+                self.expect_tok(TN::RPar)?;
+                Ok(Type::Array(Box::new(element_type)))
+            }
             _ => Err("Expected a type".to_string()),
         }
+    }
+
+    fn tokens_around_index(&self, index: usize, context: usize) -> String {
+        let start = if index >= context { index - context } else { 0 };
+        let end = if index + context < self.tokens.len() {
+            index + context
+        } else {
+            self.tokens.len() - 1
+        };
+
+        self.tokens[start..=end]
+            .iter()
+            .map(|t| format!("{:?}", t.lexeme))
+            .collect::<Vec<String>>()
+            .join(" ")
     }
 }
