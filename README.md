@@ -31,13 +31,69 @@ Simply run `cargo run ./test_files/mega.flv` to execute the mega test file.
 
 You could also write your own `.flv` file and run it the same way.
 
-## Code Style
+## Flavor Language Quickstart
 
-- Follow the existing code style and conventions.
-  - I'm using the normal Rust notation validated by [clippy](https://github.com/rust-lang/rust-clippy)
-- Include comments where necessary.
-- Use the issue tracker to report bugs or request features.
-- Provide detailed information and steps to reproduce issues.
+Flavor programs live in `.flv` files and execute top to bottom. Use `cargo run <path-to-file.flv>` from the repository root (or follow the prompt from `cargo run` with no arguments) to try the snippets below.
+
+### Hello Flavor
+
+Create a file `hello.flv` with the following code:
+
+```flv
+print "Hello from Flavor!";
+```
+
+Run it with `cargo run hello.flv` and the interpreter will print the greeting.
+
+### A Tour of the Syntax
+
+The example below combines declarations, loops, conditionals, arrays, and higher-order functions. Save it as `tour.flv` and run `cargo run tour.flv` to see the output.
+
+```flv
+fn scale_and_sum(values: [int], factor: int) -> int {
+    let total: int = 0;
+    let idx: int = 0;
+    let count: int = 3;
+    while idx < count {
+        if values[idx] % 2 == 0 {
+            total = total + values[idx];
+        }
+        idx++;
+    }
+    return total * factor;
+}
+
+fn choose(flag: bool) -> (int) -> int {
+    if flag {
+        return <value: int> -> int {
+            return value;
+        };
+    } else {
+        return <value: int> -> int {
+            return value * -1;
+        };
+    }
+}
+
+let numbers: [int] = [2, 5, 8];
+let scaler = choose(false);
+let result = scaler(scale_and_sum(numbers, 2));
+print "Result=", result, ", first element=", numbers[0];
+```
+
+This program prints `Result=-20, first element=2`: the even values are summed, doubled, and finally negated by a function returned from `choose`. The `count` variable matches the length of the array so the loop visits every element.
+
+### Core Syntax Reference
+
+- `let name[: type] = expression;` declares a mutable binding. Omit the type when Flavor can infer it from the right-hand side.
+- Numbers are 64-bit integers; arithmetic uses `+ - * / %` and comparison operators `== != < <= > >=` return `bool` values.
+- Boolean logic uses `true`, `false`, `&&`, `||`, and `!`.
+- Functions require parameter and return types: `fn name(param: type) -> return_type { ... }`. Use `return value;` to exit a function early.
+- Anonymous functions are expressions: `<value: int> -> int { return value * 2; }` can be stored in variables or returned, enabling higher-order patterns.
+- Arrays are typed with `[element_type]` and created with `[item1, item2]`. Index into arrays with `values[index]`, and chain indices for nested arrays.
+- `while condition { ... }` repeats until the condition is `false`. Inside loops you can use `break;` to exit and the postfix operators `counter++` or `counter--` to update integers.
+- `if condition { ... } else { ... }` branches on boolean expressions; the `else` block is optional.
+- `print expr1, expr2, ...;` evaluates each expression, converts it to text, and writes the concatenation to standard output.
 
 ## Contribution Guidelines
 
@@ -89,3 +145,11 @@ To run the **Flavor** engine, simply run `cargo run` in the root directory
 of the project.
 
 > You will need to have [Rust](https://www.rust-lang.org/it) on your system and [Cargo](https://doc.rust-lang.org/cargo/) to manage the project.
+
+#### Code Style
+
+- Follow the existing code style and conventions.
+  - I'm using the normal Rust notation validated by [clippy](https://github.com/rust-lang/rust-clippy)
+- Include comments where necessary.
+- Use the issue tracker to report bugs or request features.
+- Provide detailed information and steps to reproduce issues.
