@@ -1,10 +1,12 @@
-use crate::types::{Token, TokenName as TN};
+use crate::types::{Span, Token, TokenName as TN};
 use regex::Regex;
 
 pub struct Lexer {
     pub tokens: Vec<Token>,
     pos: usize,
     source: String,
+    line: usize,
+    column: usize,
 }
 
 impl Lexer {
@@ -13,12 +15,13 @@ impl Lexer {
             tokens: vec![],
             pos: 0,
             source: source_code.to_string(),
+            line: 1,
+            column: 1,
         }
     }
     pub fn lexe(&mut self) {
         loop {
             let tok = self.next_token();
-
             self.tokens.push(tok.clone());
             if tok.tok_name == TN::Eof {
                 break;
@@ -33,15 +36,9 @@ impl Lexer {
             return Token {
                 tok_name: TN::Eof,
                 lexeme: "\0".to_string(),
+                span: Span::point(self.line, self.column),
             };
         }
-
-        let mut tok = Token {
-            tok_name: TN::Unknown,
-            lexeme: "".to_string(),
-        };
-
-        let mut length_of_tok: usize = 0;
 
         let patterns = [
             (r"print\b", TN::Print),
@@ -96,41 +93,57 @@ impl Lexer {
             (r"[\s\S]*", TN::Unknown),
         ];
 
-        for (pattern, token_name) in patterns.iter() {
-            if let Some(lexeme) = self.match_start(pattern) {
-                tok.tok_name = token_name.clone();
-                tok.lexeme = lexeme.to_string();
-                length_of_tok = lexeme.len();
+        let mut token_name = TN::Unknown;
+        let mut lexeme = String::new();
+
+        for (pattern, name) in patterns.iter() {
+            if let Some(matched) = self.match_start(pattern) {
+                token_name = name.clone();
+                lexeme = matched.to_string();
                 break;
             }
         }
 
-        self.consume_n_char(length_of_tok);
+        let span = self.advance_with(&lexeme);
 
-        tok
+        Token {
+            tok_name: token_name,
+            lexeme,
+            span,
+        }
     }
 
     fn match_start(&self, pattern: &str) -> Option<&str> {
         let re = Regex::new(pattern).unwrap();
-        if let Some(mat) = re.find(self.remaining_source()) {
+        let remainder = self.remaining_source();
+        if let Some(mat) = re.find(remainder) {
             if mat.start() == 0 {
-                Some(mat.as_str())
-            } else {
-                None
+                return Some(&remainder[mat.start()..mat.end()]);
             }
-        } else {
-            None
         }
+        None
     }
 
     fn skip_whitespace(&mut self) {
         let re = Regex::new(r"^\s+").unwrap();
-        while let Some(m) = re.find(self.remaining_source()) {
-            if m.start() == 0 {
-                self.consume_n_char(m.end());
-            } else {
+        loop {
+            let len = {
+                let remainder = self.remaining_source();
+                if remainder.is_empty() {
+                    0
+                } else if let Some(m) = re.find(remainder) {
+                    if m.start() == 0 { m.end() } else { 0 }
+                } else {
+                    0
+                }
+            };
+
+            if len == 0 {
                 break;
             }
+
+            let chunk = self.source[self.pos..self.pos + len].to_string();
+            self.advance_with(&chunk);
         }
     }
 
@@ -138,7 +151,34 @@ impl Lexer {
         &self.source[self.pos..]
     }
 
-    fn consume_n_char(&mut self, n: usize) {
-        self.pos += n;
+    fn advance_with(&mut self, text: &str) -> Span {
+        let start_line = self.line;
+        let start_column = self.column;
+        let mut line = start_line;
+        let mut column = start_column;
+        let mut end_line = start_line;
+        let mut end_column = start_column;
+
+        for ch in text.chars() {
+            end_line = line;
+            end_column = column;
+            if ch == '\n' {
+                line += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+
+        self.pos += text.len();
+        self.line = line;
+        self.column = column;
+
+        if text.is_empty() {
+            end_line = start_line;
+            end_column = start_column;
+        }
+
+        Span::new(start_line, start_column, end_line, end_column)
     }
 }

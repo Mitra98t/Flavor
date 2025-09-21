@@ -1,8 +1,11 @@
+mod error;
 mod interpreter;
 mod lexer;
 mod parser;
 mod typechecker;
 mod types;
+
+use error::FlavorError;
 use interpreter::Interpreter;
 use lexer::Lexer;
 use parser::Parser;
@@ -11,8 +14,12 @@ use typechecker::TypeChecker;
 #[allow(unused)]
 use crate::types::print_ast;
 
+fn report_and_exit(error: FlavorError, source: &str) -> ! {
+    eprintln!("{}", error.render(source));
+    std::process::exit(1);
+}
+
 fn main() {
-    // read from file given in input
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <source_file>", args[0]);
@@ -40,29 +47,28 @@ fn main() {
     }
 
     let mut parser = Parser::new(lexer.tokens);
-    let nodes = parser.parse_program();
+    let nodes = match parser.parse_program() {
+        Ok(nodes) => nodes,
+        Err(err) => report_and_exit(err, &code),
+    };
 
     if debug {
         println!("AST\n");
-        match &nodes {
-            Ok(n) => print_ast(n.to_vec()),
-            Err(e) => println!("{e}"),
-        }
+        print_ast(nodes.clone());
         println!("\n----\n");
     }
 
     let mut tc = TypeChecker::new();
-    let nodes = nodes.unwrap();
-    let typecheck_result = tc.check_program(&nodes);
-    if debug {
-        println!("Type Checking\n");
-        if let Err(e) = &typecheck_result {
-            println!("{e}")
-        }
-        println!("\n----\n");
+    if let Err(err) = tc.check_program(&nodes) {
+        report_and_exit(err, &code);
     }
-    typecheck_result.unwrap();
+
+    if debug {
+        println!("Type Checking\n\n----\n");
+    }
 
     let mut interpreter = Interpreter::new();
-    interpreter.eval_program(&nodes).unwrap();
+    if let Err(err) = interpreter.eval_program(&nodes) {
+        report_and_exit(err, &code);
+    }
 }

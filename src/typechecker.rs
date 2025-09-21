@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::error::{ErrorPhase, FlavorError};
 use crate::types::{ASTNode, Type};
 
 pub struct TypeChecker {
@@ -34,9 +35,9 @@ impl TypeChecker {
         }
     }
 
-    pub fn get(&self, name: String) -> Option<&Type> {
+    pub fn get(&self, name: &str) -> Option<&Type> {
         for scope in self.scopes.iter().rev() {
-            if let Some(ty) = scope.get(&name) {
+            if let Some(ty) = scope.get(name) {
                 return Some(ty);
             }
         }
@@ -51,28 +52,23 @@ impl TypeChecker {
         self.scopes.pop();
     }
 
-    pub fn check_program(&mut self, nodes: &[ASTNode]) -> Result<(), String> {
-        for n in nodes {
-            self.check(n)?;
+    pub fn check_program(&mut self, nodes: &[ASTNode]) -> Result<(), FlavorError> {
+        for node in nodes {
+            self.check(node)?;
         }
         Ok(())
     }
 
-    /// Return a Result type
-    /// Positive case => (Type, bool) the type is the type of the ASTNode and the bool shows if it
-    /// is a return (useful to check all paths)
-    /// Negative case => Error String
-    ///
-    /// * `node`:
-    fn check(&mut self, node: &ASTNode) -> Result<(Type, bool), String> {
+    fn check(&mut self, node: &ASTNode) -> Result<(Type, bool), FlavorError> {
         match node {
-            ASTNode::Print(args) => {
-                for arg in args.clone().into_iter() {
-                    let _ = self.check(&arg)?;
+            ASTNode::Print { expressions, .. } => {
+                for expr in expressions {
+                    let _ = self.check(expr)?;
                 }
                 Ok((Type::Unit, false))
             }
-            ASTNode::ArrayLiteral(elements) => {
+
+            ASTNode::ArrayLiteral { elements, span } => {
                 if elements.is_empty() {
                     if let Some(Type::Array(expected)) = self.current_expected_type.clone() {
                         return Ok((Type::Array(expected), false));
@@ -80,14 +76,26 @@ impl TypeChecker {
                     return Ok((Type::Array(Box::new(Type::Unit)), false));
                 }
 
-                let mut element_type: Option<Type> = None;
+                let expected_elem = match self.current_expected_type.clone() {
+                    Some(Type::Array(expected)) => Some(expected),
+                    _ => None,
+                };
 
+                let mut element_type: Option<Type> = None;
                 for elem in elements {
-                    let (elem_ty, _returns) = self.check(elem)?;
-                    if let Some(ref t) = element_type {
-                        if *t != elem_ty {
-                            return Err(format!(
-                                "Array elements must be of the same type, found {t:?} and {elem_ty:?}"
+                    let (elem_ty, _) = if let Some(ref expected) = expected_elem {
+                        self.with_expected_type(Some(*expected.clone()), |tc| tc.check(elem))?
+                    } else {
+                        self.check(elem)?
+                    };
+                    if let Some(ref existing) = element_type {
+                        if *existing != elem_ty {
+                            return Err(FlavorError::with_span(
+                                format!(
+                                    "Array elements must be of the same type, found {existing:?} and {elem_ty:?}"
+                                ),
+                                elem.span(),
+                                ErrorPhase::TypeChecking,
                             ));
                         }
                     } else {
@@ -96,12 +104,15 @@ impl TypeChecker {
                 }
 
                 let final_elem_type = element_type.unwrap();
-
-                if let Some(Type::Array(expected)) = self.current_expected_type.clone() {
+                if let Some(expected) = expected_elem {
                     if *expected != final_elem_type {
-                        return Err(format!(
-                            "Array literal element type mismatch: expected {:?}, found {:?}",
-                            *expected, final_elem_type
+                        return Err(FlavorError::with_span(
+                            format!(
+                                "Array literal element type mismatch: expected {:?}, found {:?}",
+                                *expected, final_elem_type
+                            ),
+                            *span,
+                            ErrorPhase::TypeChecking,
                         ));
                     }
                     return Ok((Type::Array(expected), false));
@@ -109,20 +120,24 @@ impl TypeChecker {
 
                 Ok((Type::Array(Box::new(final_elem_type)), false))
             }
-            ASTNode::ArrayAccess { array, index } => {
-                let (array_ty, _array_ret) = self.check(array)?;
-                let (index_ty, _index_ret) = self.check(index)?;
+            ASTNode::ArrayAccess { array, index, span } => {
+                let (array_ty, _) = self.check(array)?;
+                let (index_ty, _) = self.check(index)?;
 
                 if index_ty != Type::Int {
-                    return Err(format!(
-                        "Array index must be of type Int, found {index_ty:?}"
+                    return Err(FlavorError::with_span(
+                        format!("Array index must be of type Int, found {index_ty:?}"),
+                        index.span(),
+                        ErrorPhase::TypeChecking,
                     ));
                 }
 
                 match array_ty {
                     Type::Array(elem_type) => Ok((*elem_type, false)),
-                    _ => Err(format!(
-                        "Cannot access elements of non-array type {array_ty:?}"
+                    other => Err(FlavorError::with_span(
+                        format!("Cannot access elements of non-array type {other:?}"),
+                        *span,
+                        ErrorPhase::TypeChecking,
                     )),
                 }
             }
@@ -130,56 +145,58 @@ impl TypeChecker {
                 identifier,
                 var_type,
                 expr,
+                span,
             } => {
                 if let ASTNode::FunctionExpression {
                     parameters,
                     return_type,
                     body,
+                    ..
                 } = expr.as_ref()
                 {
                     let inferred_ty = Type::Function {
-                        param_types: parameters.iter().map(|(_, t)| t.clone()).collect(),
+                        param_types: parameters.iter().map(|(_, ty)| ty.clone()).collect(),
                         return_type: Box::new(return_type.clone()),
                     };
 
                     if let Some(declared_ty) = var_type {
-                        let mut is_equal = true;
-
+                        let mut matches = true;
                         match declared_ty {
                             Type::Function {
-                                param_types: declared_params,
+                                param_types,
                                 return_type: declared_return,
                             } => {
-                                if declared_params.len() != parameters.len() {
-                                    is_equal = false;
+                                if param_types.len() != parameters.len() {
+                                    matches = false;
                                 } else {
                                     for ((_, actual_ty), expected_ty) in
-                                        parameters.iter().zip(declared_params.iter())
+                                        parameters.iter().zip(param_types.iter())
                                     {
                                         if actual_ty != expected_ty {
-                                            is_equal = false;
+                                            matches = false;
                                             break;
                                         }
                                     }
                                     if *declared_return.as_ref() != return_type.clone() {
-                                        is_equal = false;
+                                        matches = false;
                                     }
                                 }
                             }
-                            _ => {
-                                is_equal = false;
-                            }
+                            _ => matches = false,
                         }
 
-                        if !is_equal {
-                            return Err(format!(
-                                "Type mismatch in Let Declaration: variable '{identifier}' declared as {declared_ty:?} but expression has type {inferred_ty:?}"
+                        if !matches {
+                            return Err(FlavorError::with_span(
+                                format!(
+                                    "Type mismatch in let declaration: variable '{identifier}' declared as {declared_ty:?} but expression has type {inferred_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ));
                         }
                     }
 
                     let stored_ty = var_type.clone().unwrap_or(inferred_ty.clone());
-
                     self.insert(identifier.clone(), stored_ty.clone());
 
                     let previous_expected_return = self.current_expected_return.clone();
@@ -194,36 +211,45 @@ impl TypeChecker {
                     for (param_name, param_ty) in parameters {
                         self.insert(param_name.clone(), param_ty.clone());
                     }
-                    let (_, guaranteed_ret) = self.check(body)?;
+                    let (_, guaranteed_return) = self.check(body)?;
                     self.exit_scope();
                     self.current_expected_return = previous_expected_return;
 
-                    if expected_return != Type::Unit && !guaranteed_ret {
-                        return Err(format!(
-                            "Function assigned to '{identifier}' does not guarantee a return on all paths"
+                    if expected_return != Type::Unit && !guaranteed_return {
+                        return Err(FlavorError::with_span(
+                            format!(
+                                "Function assigned to '{identifier}' does not guarantee a return on all paths"
+                            ),
+                            body.span(),
+                            ErrorPhase::TypeChecking,
                         ));
                     }
 
                     return Ok((stored_ty, false));
                 }
 
-                let expr_ty = if let Some(declared_ty) = var_type {
+                let expr_result = if let Some(declared_ty) = var_type {
                     self.with_expected_type(Some(declared_ty.clone()), |tc| tc.check(expr))?
                 } else {
                     self.check(expr)?
                 };
+
                 if let Some(declared_ty) = var_type {
-                    if *declared_ty != expr_ty.0 {
-                        return Err(format!(
-                            "Type mismatch in Let Declaration: variable '{identifier}' declared as {var_type:?} but expression has type {expr_ty:?}"
+                    if *declared_ty != expr_result.0 {
+                        return Err(FlavorError::with_span(
+                            format!(
+                                "Type mismatch in let declaration: variable '{identifier}' declared as {declared_ty:?} but expression has type {:?}",
+                                expr_result.0
+                            ),
+                            expr.span(),
+                            ErrorPhase::TypeChecking,
                         ));
                     }
                     self.insert(identifier.clone(), declared_ty.clone());
                     Ok((declared_ty.clone(), false))
                 } else {
-                    self.insert(identifier.clone(), expr_ty.0.clone());
-
-                    Ok((expr_ty.0, false))
+                    self.insert(identifier.clone(), expr_result.0.clone());
+                    Ok((expr_result.0, false))
                 }
             }
             ASTNode::FunctionDeclaration {
@@ -231,33 +257,32 @@ impl TypeChecker {
                 parameters,
                 return_type,
                 body,
+                span,
             } => {
                 let func_ty = Type::Function {
-                    param_types: parameters.iter().map(|(_, t)| t.clone()).collect(),
+                    param_types: parameters.iter().map(|(_, ty)| ty.clone()).collect(),
                     return_type: Box::new(return_type.clone()),
                 };
 
-                let old_expected = self.current_expected_return.clone();
+                let previous_expected_return = self.current_expected_return.clone();
                 self.current_expected_return = Some(return_type.clone());
 
                 self.insert(name.clone(), func_ty.clone());
 
-                // Enter Scope for function Body
                 self.enter_scope();
-
                 for (param_name, param_ty) in parameters {
                     self.insert(param_name.clone(), param_ty.clone());
                 }
-
-                let (_, guaranteed_ret) = self.check(body)?;
-
+                let (_, guaranteed_return) = self.check(body)?;
                 self.exit_scope();
 
-                self.current_expected_return = old_expected;
+                self.current_expected_return = previous_expected_return;
 
-                if *return_type != Type::Unit && !guaranteed_ret {
-                    return Err(format!(
-                        "Function '{name}' does not guarantee a return on all paths"
+                if *return_type != Type::Unit && !guaranteed_return {
+                    return Err(FlavorError::with_span(
+                        format!("Function '{name}' does not guarantee a return on all paths"),
+                        *span,
+                        ErrorPhase::TypeChecking,
                     ));
                 }
 
@@ -267,9 +292,10 @@ impl TypeChecker {
                 parameters,
                 return_type,
                 body,
+                span,
             } => {
                 let func_ty = Type::Function {
-                    param_types: parameters.iter().map(|(_, t)| t.clone()).collect(),
+                    param_types: parameters.iter().map(|(_, ty)| ty.clone()).collect(),
                     return_type: Box::new(return_type.clone()),
                 };
 
@@ -280,24 +306,36 @@ impl TypeChecker {
                 }) = self.current_expected_type.clone()
                 {
                     if expected_params.len() != parameters.len() {
-                        return Err(format!(
-                            "Function expression parameter count mismatch: expected {}, found {}",
-                            expected_params.len(),
-                            parameters.len()
+                        return Err(FlavorError::with_span(
+                            format!(
+                                "Function expression parameter count mismatch: expected {}, found {}",
+                                expected_params.len(),
+                                parameters.len()
+                            ),
+                            *span,
+                            ErrorPhase::TypeChecking,
                         ));
                     }
                     for ((_, actual_ty), expected_ty) in
                         parameters.iter().zip(expected_params.iter())
                     {
                         if actual_ty != expected_ty {
-                            return Err(format!(
-                                "Function expression parameter type mismatch: expected {expected_ty:?}, found {actual_ty:?}"
+                            return Err(FlavorError::with_span(
+                                format!(
+                                    "Function expression parameter type mismatch: expected {expected_ty:?}, found {actual_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ));
                         }
                     }
                     if *expected_return.as_ref() != return_type.clone() {
-                        return Err(format!(
-                            "Function expression return type mismatch: expected {expected_return:?}, found {return_type:?}"
+                        return Err(FlavorError::with_span(
+                            format!(
+                                "Function expression return type mismatch: expected {expected_return:?}, found {return_type:?}"
+                            ),
+                            *span,
+                            ErrorPhase::TypeChecking,
                         ));
                     }
                     enforced_return = *expected_return.clone();
@@ -310,29 +348,30 @@ impl TypeChecker {
                 for (param_name, param_ty) in parameters {
                     self.insert(param_name.clone(), param_ty.clone());
                 }
-                let (_, guaranteed_ret) = self.check(body)?;
+                let (_, guaranteed_return) = self.check(body)?;
                 self.exit_scope();
-
                 self.current_expected_return = previous_expected_return;
 
-                if enforced_return != Type::Unit && !guaranteed_ret {
-                    return Err(
-                        "Function expression does not guarantee a return on all paths".to_string(),
-                    );
+                if enforced_return != Type::Unit && !guaranteed_return {
+                    return Err(FlavorError::with_span(
+                        "Function expression does not guarantee a return on all paths",
+                        body.span(),
+                        ErrorPhase::TypeChecking,
+                    ));
                 }
 
                 Ok((func_ty, false))
             }
-            ASTNode::Body { nodes } => {
+            ASTNode::Body { nodes, .. } => {
                 let mut guaranteed_return = false;
                 let mut last_type = Type::Unit;
 
-                for n in nodes {
-                    let (ty, returns) = self.check(n)?;
+                for stmt in nodes {
+                    let (ty, returns) = self.check(stmt)?;
                     last_type = ty;
                     if returns {
                         guaranteed_return = true;
-                        break; // unreachable code after return
+                        break;
                     }
                 }
 
@@ -342,13 +381,17 @@ impl TypeChecker {
                 guard,
                 then_body,
                 else_body,
+                ..
             } => {
                 let guard_ty = self.check(guard)?;
-
                 if guard_ty.0 != Type::Bool {
-                    return Err(format!(
-                        "Guard in If statement should be of type Bool, but was {:?}",
-                        guard_ty.0,
+                    return Err(FlavorError::with_span(
+                        format!(
+                            "Guard in if statement should be of type Bool, but was {:?}",
+                            guard_ty.0
+                        ),
+                        guard.span(),
+                        ErrorPhase::TypeChecking,
                     ));
                 }
 
@@ -356,52 +399,55 @@ impl TypeChecker {
 
                 if let Some(else_body) = else_body {
                     let (_else_ty, else_returns) = self.check(else_body)?;
-
-                    // Relaxed: Don't require then_ty == else_ty here.
-                    // Instead, only require both branches guarantee return.
                     if then_returns && else_returns {
-                        // Both branches return, so the if expression guarantees return
-                        // Return the function expected type or some common type if you can
                         Ok((
                             self.current_expected_return.clone().unwrap_or(Type::Unit),
                             true,
                         ))
                     } else {
-                        // One or both branches do not guarantee return
                         Ok((then_ty, false))
                     }
                 } else {
-                    // No else branch means no guaranteed return
                     Ok((then_ty, false))
                 }
             }
-            ASTNode::While { guard, body } => {
+            ASTNode::While { guard, body, .. } => {
                 let guard_ty = self.check(guard)?;
                 if guard_ty.0 != Type::Bool {
-                    return Err(format!(
-                        "Guard in While statement should be of type Bool, but was {:?}",
-                        guard_ty.0,
+                    return Err(FlavorError::with_span(
+                        format!(
+                            "Guard in while statement should be of type Bool, but was {:?}",
+                            guard_ty.0
+                        ),
+                        guard.span(),
+                        ErrorPhase::TypeChecking,
                     ));
                 }
-                let (_body_ty, _body_returns) = self.check(body)?;
-                // loops may or may not return; conservatively assume no guaranteed return after while
+                let _ = self.check(body)?;
                 Ok((Type::Unit, false))
             }
-            ASTNode::Break => Ok((Type::Unit, false)),
-            ASTNode::FunctionCall { callee, arguments } => {
-                let (callee_ty, _callee_ret) = self.check(callee)?;
+            ASTNode::Break { .. } => Ok((Type::Unit, false)),
+            ASTNode::FunctionCall {
+                callee,
+                arguments,
+                span,
+            } => {
+                let (callee_ty, _) = self.check(callee)?;
 
                 match callee_ty {
                     Type::Function {
                         param_types,
                         return_type,
                     } => {
-                        // Check args count
                         if param_types.len() != arguments.len() {
-                            return Err(format!(
-                                "Function called with wrong number of arguments: expected {}, found {}",
-                                param_types.len(),
-                                arguments.len()
+                            return Err(FlavorError::with_span(
+                                format!(
+                                    "Function called with wrong number of arguments: expected {}, found {}",
+                                    param_types.len(),
+                                    arguments.len()
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ));
                         }
 
@@ -410,64 +456,84 @@ impl TypeChecker {
                                 tc.check(arg_node)
                             })?;
                             if *param_ty != arg_ty.0 {
-                                return Err(format!(
-                                    "Function argument type mismatch: expected {param_ty:?}, found {arg_ty:?}"
+                                return Err(FlavorError::with_span(
+                                    format!(
+                                        "Function argument type mismatch: expected {param_ty:?}, found {:?}",
+                                        arg_ty.0
+                                    ),
+                                    arg_node.span(),
+                                    ErrorPhase::TypeChecking,
                                 ));
                             }
                         }
 
                         Ok((*return_type.clone(), false))
                     }
-                    other => Err(format!("Attempted to call non-function type {other:?}")),
+                    other => Err(FlavorError::with_span(
+                        format!("Attempted to call non-function type {other:?}"),
+                        callee.span(),
+                        ErrorPhase::TypeChecking,
+                    )),
                 }
             }
-            ASTNode::UnitLiteral => Ok((Type::Unit, false)),
-            // FIX: how to handle floats?
-            ASTNode::NumberLiteral(_) => Ok((Type::Int, false)),
-            ASTNode::StringLiteral(_) => Ok((Type::String, false)),
-            ASTNode::BoolLiteral(_) => Ok((Type::Bool, false)),
-            ASTNode::Identifier(name) => {
-                if let Some(t) = self.get(name.to_string()) {
-                    Ok((t.clone(), false))
+            ASTNode::UnitLiteral { .. } => Ok((Type::Unit, false)),
+            ASTNode::NumberLiteral { .. } => Ok((Type::Int, false)),
+            ASTNode::StringLiteral { .. } => Ok((Type::String, false)),
+            ASTNode::BoolLiteral { .. } => Ok((Type::Bool, false)),
+            ASTNode::Identifier { name, span } => {
+                if let Some(ty) = self.get(name) {
+                    Ok((ty.clone(), false))
                 } else {
-                    Err(format!("Undefined variable '{name}'"))
+                    Err(FlavorError::with_span(
+                        format!("Undefined variable '{name}'"),
+                        *span,
+                        ErrorPhase::TypeChecking,
+                    ))
                 }
             }
-            ASTNode::Return(expr) => {
+            ASTNode::Return { expr, span } => {
                 let expected_return = self.current_expected_return.clone();
                 let expr_ty = if expected_return.is_some() {
                     self.with_expected_type(expected_return.clone(), |tc| tc.check(expr))?
                 } else {
                     self.check(expr)?
                 };
-                if let Some(expected) = &expected_return {
-                    if expr_ty.0 != *expected {
-                        return Err(format!(
-                            "Return type does not match expected type in function signature: Expected {:?}, returned {:?}",
-                            expected, expr_ty.0
+                if let Some(expected) = expected_return {
+                    if expr_ty.0 != expected {
+                        return Err(FlavorError::with_span(
+                            format!(
+                                "Return type does not match expected type: expected {expected:?}, found {:?}",
+                                expr_ty.0
+                            ),
+                            *span,
+                            ErrorPhase::TypeChecking,
                         ));
                     }
                 }
                 Ok((expr_ty.0, true))
             }
-            ASTNode::ExpressionStatement(expr) => {
+            ASTNode::ExpressionStatement { expr, .. } => {
                 let _ = self.check(expr)?;
                 Ok((Type::Unit, false))
             }
             ASTNode::UnaryExpression {
                 operator,
                 operand,
-                is_postfix: _,
+                span,
+                ..
             } => {
-                let (operand_ty, _operand_ret) = self.check(operand)?;
-
+                let (operand_ty, _) = self.check(operand)?;
                 match operator.as_str() {
                     "!" => {
                         if operand_ty == Type::Bool {
                             Ok((Type::Bool, false))
                         } else {
-                            Err(format!(
-                                "Unary operator '{operator}' requires Bool operand but found {operand_ty:?}",
+                            Err(FlavorError::with_span(
+                                format!(
+                                    "Unary operator '{operator}' requires Bool operand but found {operand_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ))
                         }
                     }
@@ -475,21 +541,30 @@ impl TypeChecker {
                         if operand_ty == Type::Int {
                             Ok((Type::Int, false))
                         } else {
-                            Err(format!(
-                                "Unary operator '{operator}' requires Integer operand but found {operand_ty:?}",
+                            Err(FlavorError::with_span(
+                                format!(
+                                    "Unary operator '{operator}' requires Int operand but found {operand_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ))
                         }
                     }
-                    _ => Err(format!("Unknown unary operator '{operator}'")),
+                    _ => Err(FlavorError::with_span(
+                        format!("Unknown unary operator '{operator}'"),
+                        *span,
+                        ErrorPhase::TypeChecking,
+                    )),
                 }
             }
             ASTNode::BinaryExpression {
                 left,
                 operator,
                 right,
+                span,
             } => {
-                let (left_ty, _left_ret) = self.check(left)?;
-                let (right_ty, _right_ret) = if operator == "=" {
+                let (left_ty, _) = self.check(left)?;
+                let (right_ty, _) = if operator == "=" {
                     self.with_expected_type(Some(left_ty.clone()), |tc| tc.check(right))?
                 } else {
                     self.check(right)?
@@ -498,8 +573,12 @@ impl TypeChecker {
                 match operator.as_str() {
                     "=" => {
                         if left_ty != right_ty {
-                            return Err(format!(
-                                "Type mismatch in assignment: left is {left_ty:?}, right is {right_ty:?}"
+                            return Err(FlavorError::with_span(
+                                format!(
+                                    "Type mismatch in assignment: left is {left_ty:?}, right is {right_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ));
                         }
                         Ok((left_ty, false))
@@ -508,26 +587,25 @@ impl TypeChecker {
                         if left_ty == Type::Int && right_ty == Type::Int {
                             Ok((Type::Bool, false))
                         } else {
-                            Err(format!(
-                                "Operator '{operator}' requires Integer operands but found left: {left_ty:?}, right: {right_ty:?}"
+                            Err(FlavorError::with_span(
+                                format!(
+                                    "Operator '{operator}' requires Int operands but found left: {left_ty:?}, right: {right_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ))
                         }
                     }
-                    "+" | "-" | "*" | "/" => {
+                    "+" | "-" | "*" | "/" | "%" => {
                         if left_ty == Type::Int && right_ty == Type::Int {
                             Ok((Type::Int, false))
                         } else {
-                            Err(format!(
-                                "Operator '{operator}' requires Integer operands but found left: {left_ty:?}, right: {right_ty:?}"
-                            ))
-                        }
-                    }
-                    "%" => {
-                        if left_ty == Type::Int && right_ty == Type::Int {
-                            Ok((Type::Int, false))
-                        } else {
-                            Err(format!(
-                                "Operator '{operator}' requires Integer operands but found left: {left_ty:?}, right: {right_ty:?}"
+                            Err(FlavorError::with_span(
+                                format!(
+                                    "Operator '{operator}' requires Int operands but found left: {left_ty:?}, right: {right_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ))
                         }
                     }
@@ -535,8 +613,12 @@ impl TypeChecker {
                         if left_ty == Type::Bool && right_ty == Type::Bool {
                             Ok((Type::Bool, false))
                         } else {
-                            Err(format!(
-                                "Operator '{operator}' requires Boolean operands but found left: {left_ty:?}, right: {right_ty:?}"
+                            Err(FlavorError::with_span(
+                                format!(
+                                    "Operator '{operator}' requires Bool operands but found left: {left_ty:?}, right: {right_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ))
                         }
                     }
@@ -544,12 +626,20 @@ impl TypeChecker {
                         if left_ty == right_ty {
                             Ok((Type::Bool, false))
                         } else {
-                            Err(format!(
-                                "Cannot compare different types. Found left: {left_ty:?}, right: {right_ty:?}"
+                            Err(FlavorError::with_span(
+                                format!(
+                                    "Cannot compare different types. Found left: {left_ty:?}, right: {right_ty:?}"
+                                ),
+                                *span,
+                                ErrorPhase::TypeChecking,
                             ))
                         }
                     }
-                    _ => Err(format!("Unknown binary operator '{operator}'")),
+                    _ => Err(FlavorError::with_span(
+                        format!("Unknown binary operator '{operator}'"),
+                        *span,
+                        ErrorPhase::TypeChecking,
+                    )),
                 }
             }
         }
