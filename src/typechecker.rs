@@ -380,17 +380,29 @@ impl TypeChecker {
                 Ok((func_ty, false))
             }
             ASTNode::Body { nodes, .. } => {
+                self.enter_scope();
+
                 let mut guaranteed_return = false;
                 let mut last_type = Type::Unit;
 
                 for n in nodes {
-                    let (ty, returns) = self.check(n)?;
-                    last_type = ty;
-                    if returns {
-                        guaranteed_return = true;
-                        break; // unreachable code after return
+                    let check_res = self.check(n);
+                    match check_res {
+                        Ok((ty, returns)) => {
+                            last_type = ty;
+                            if returns {
+                                guaranteed_return = true;
+                                break; // unreachable code after return
+                            }
+                        }
+                        Err(err) => {
+                            self.exit_scope();
+                            return Err(err);
+                        }
                     }
                 }
+
+                self.exit_scope();
 
                 Ok((last_type, guaranteed_return))
             }

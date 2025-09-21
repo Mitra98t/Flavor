@@ -1,0 +1,16 @@
+let limit: int = 5;
+let acc: int = 0;
+let i: int = 0;
+while i < limit {
+    acc = acc + i;
+    i++;
+    if acc >= 6 {
+        print "breaking with acc=", acc;
+        break;
+    }
+}
+if acc >= 6 {
+    print "final acc=", acc;
+} else {
+    print "loop exited naturally with acc=", acc;
+}

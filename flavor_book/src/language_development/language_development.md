@@ -85,10 +85,10 @@ let tokens = Lexer.lexe(code);
 ```
 
 How the lexer does this processing to the source code is _not that relevant_.
-There are multiple ways in which we can acomplish this result.  
+There are multiple ways in which we can accomplish this result.  
 The most common is the usage of **single character scanning system**.
 The logic is that the lexer scans the source code one character at the time and
-checks it to see if it correspond to a token or to the start of a token.
+checks it to see if it corresponds to a token or to the start of a token.
 For example, if the character is the symbol `;`, we produce the token `SEMICOLON`
 If the character is the letter `f`, it might be part of an identifier.
 In this case, the lexer continues scanning the following characters (looking for alphanumeric ones) and,
@@ -121,7 +121,7 @@ First we encounter the addition node `+`, we know that the two operands of
 the addition are the children node of the `+`.
 We then go to the left child finding the number `3`; `3` is a terminal element
 so we are done and we know the first of the two operands.
-Going then to the left element, we find the operator `*` for the multiplication.
+Going then to the right element, we find the operator `*` for the multiplication.
 As already shown for the addition, we go look for the operands of the
 multiplication in the children nodes.
 We find two terminal nodes meaning that we know how to resolve the `*` operation
@@ -136,14 +136,14 @@ multiplications before additions).
 Let us now understand how to build the parser so that it will produce the AST
 from the token list.
 We need to give meaning to the tokens, to do so we need a **grammar**.
-What the grammar does in this context is to provide _rules_ to use to check the
-correctness of the tokens ordering.  
+In this context, a grammar is a set of rules that define how the tokens can be
+combined to form valid expressions in the language.
 This step is important so we will reiterate on it.
 
 We use the grammar to specify how the tokens must appear in the token list.
 The simple grammar `expr := NUMBER '+' NUMBER` will accept the tokens `[(NUMBER, "3"),
 (BIN_OP, "+"), (NUMBER, "4")]` in turn accepting the code `3+4`.
-Everything other than this specific elements will be regected by the grammar.  
+Anything other than this specific elements will be regected by the grammar.  
 The parser then uses the grammar to check the correct order of the tokens.
 If the tokens are in a valid sequence, then the corresponding AST node is
 produced (in this case the addition node `(+)` with the two number children `[3]` `[4]`).

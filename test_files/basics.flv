@@ -1,0 +1,4 @@
+let a: int = 3;
+let b: int = 4;
+let c = a + b * 2;
+print "a=", a, ", b=", b, ", c=", c;

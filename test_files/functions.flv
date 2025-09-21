@@ -1,0 +1,18 @@
+fn fib(n: int) -> int {
+    if n <= 1 {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+fn sum_to(n: int) -> int {
+    let total: int = 0;
+    let idx: int = 0;
+    while idx <= n {
+        total = total + idx;
+        idx++;
+    }
+    return total;
+}
+let five = fib(5);
+let ten = sum_to(4);
+print "fib(5)=", five, ", sum_to(4)=", ten;

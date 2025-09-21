@@ -14,7 +14,7 @@ I am missing the whole picture, so I will try to cover all the steps this time.
 Moreover, I have never built a compiler, so this will be a new experience for
 me.
 
-To specify some things before we start:
+Some things to specify before we start:
 
 - This project is not meant to be a _learning resource_, but rather a **learning
   platform**; the idea of sharing this experience is guided by the hope that it
@@ -32,7 +32,7 @@ To specify some things before we start:
   I'm using [mdbook](https://rust-lang.github.io/mdBook/index.html) to write it
   and book appears to be the name used.
 
-Lastly, I **appreciate** any feedback, suggestion, or contribution to the project.
+Lastly, I **appreciate** any feedback, suggestions, or contributions to the project.
 I will try to keep the code on GitHub up to date with the content of the book, so you can
 follow along with the code as we progress through the chapters.
 
@@ -59,7 +59,7 @@ so I will be happy to receive any feedback or suggestions.
 
 ## Who are you?
 
-If you found this book, there is the good chance that you are interested in
+If you found this book, there is a good chance that you are interested in
 language development and design.
 I do not want to be so presumptuous as to assume that you will learn from this
 resource even if you are a seasoned developer, but I hope that you will find
@@ -109,8 +109,7 @@ out how to create custom highlighting for Flavor) so it might be imperfect.
 
 ## Some design choices
 
-The first, and most predominant, choice is the language we will be using for
-development.
+The language we will be using for development is the first, and most predominant, choice.
 I have chosen Rust for a few reasons.
 First, I am quite enjoying the language, I find its consistency and safety features
 very appealing; the strong typing system promotes good design at an early stage.
@@ -135,7 +134,7 @@ to come up with solutions that I am reasonably happy with.
 
 ## Flavor
 
-**Flavor**, the language protagonist of this book.
+**Flavor**: the language protagonist of this book.
 
 Flavor will be an interpreted language (unless I manange to write a compiler)
 offering a strict typing system, type inference, function and lambdas, and --

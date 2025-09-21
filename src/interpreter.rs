@@ -7,7 +7,7 @@ use crate::error::{ErrorPhase, FlavorError};
 use crate::types::{ASTNode as AST, Type};
 
 #[derive(Debug, Clone)]
-pub enum EvaluationType {
+pub(crate) enum EvaluationType {
     Int(i64),
     // Float(f64),
     Bool(bool),
@@ -18,7 +18,7 @@ pub enum EvaluationType {
     Function {
         parameters: Vec<String>,
         body: Box<AST>,
-        env: Rc<RefCell<HashMap<String, EvaluationType>>>,
+        env: Rc<RefCell<EnvFrame>>,
     },
 }
 
@@ -76,21 +76,108 @@ impl fmt::Display for EvaluationType {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct EnvFrame {
+    values: HashMap<String, EvaluationType>,
+    parent: Option<Rc<RefCell<EnvFrame>>>,
+}
+
+impl EnvFrame {
+    fn new(parent: Option<Rc<RefCell<EnvFrame>>>) -> Self {
+        Self {
+            values: HashMap::new(),
+            parent,
+        }
+    }
+
+    fn get(env: &Rc<RefCell<EnvFrame>>, name: &str) -> Option<EvaluationType> {
+        let (maybe_value, parent) = {
+            let borrowed = env.borrow();
+            let value = borrowed.values.get(name).cloned();
+            let parent = borrowed.parent.clone();
+            (value, parent)
+        };
+
+        if let Some(value) = maybe_value {
+            Some(value)
+        } else {
+            parent.and_then(|p| EnvFrame::get(&p, name))
+        }
+    }
+
+    fn find_env(env: &Rc<RefCell<EnvFrame>>, name: &str) -> Option<Rc<RefCell<EnvFrame>>> {
+        let (contains, parent) = {
+            let borrowed = env.borrow();
+            let contains = borrowed.values.contains_key(name);
+            let parent = borrowed.parent.clone();
+            (contains, parent)
+        };
+
+        if contains {
+            Some(Rc::clone(env))
+        } else {
+            parent.and_then(|p| EnvFrame::find_env(&p, name))
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
-pub enum EvalOutcome {
+pub(crate) enum EvalOutcome {
     Value(EvaluationType),
     Break,
     Return(EvaluationType),
 }
 
 pub struct Interpreter {
-    pub env: HashMap<String, EvaluationType>,
+    current_env: Rc<RefCell<EnvFrame>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Interpreter {
-            env: HashMap::new(),
+            current_env: Rc::new(RefCell::new(EnvFrame::new(None))),
+        }
+    }
+
+    fn push_scope(&mut self) {
+        let child = Rc::new(RefCell::new(EnvFrame::new(Some(Rc::clone(
+            &self.current_env,
+        )))));
+        self.current_env = child;
+    }
+
+    fn pop_scope(&mut self) {
+        let parent = {
+            let borrowed = self.current_env.borrow();
+            borrowed.parent.clone()
+        };
+        if let Some(parent) = parent {
+            self.current_env = parent;
+        } else {
+            // Attempted to pop the global scope; keep it intact.
+            // This should not happen during correct evaluation, so we simply
+            // retain the current environment.
+        }
+    }
+
+    fn define(&mut self, name: String, value: EvaluationType) {
+        self.current_env.borrow_mut().values.insert(name, value);
+    }
+
+    fn lookup(&self, name: &str) -> Option<EvaluationType> {
+        EnvFrame::get(&self.current_env, name)
+    }
+
+    fn find_env_for(&self, name: &str) -> Option<Rc<RefCell<EnvFrame>>> {
+        EnvFrame::find_env(&self.current_env, name)
+    }
+
+    fn assign_existing(&mut self, name: &str, value: EvaluationType) -> bool {
+        if let Some(env) = self.find_env_for(name) {
+            env.borrow_mut().values.insert(name.to_string(), value);
+            true
+        } else {
+            false
         }
     }
 
@@ -121,13 +208,24 @@ impl Interpreter {
                 Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
             AST::Body { nodes, .. } => {
+                self.push_scope();
                 let mut result = EvaluationType::Unit;
                 for n in nodes {
-                    match self.eval(n)? {
-                        EvalOutcome::Value(val) => result = val,
-                        control_flow => return Ok(control_flow),
+                    match self.eval(n) {
+                        Ok(EvalOutcome::Value(val)) => {
+                            result = val;
+                        }
+                        Ok(control_flow) => {
+                            self.pop_scope();
+                            return Ok(control_flow);
+                        }
+                        Err(err) => {
+                            self.pop_scope();
+                            return Err(err);
+                        }
                     }
                 }
+                self.pop_scope();
                 Ok(EvalOutcome::Value(result))
             }
             AST::If {
@@ -203,10 +301,7 @@ impl Interpreter {
                     }
                 }
 
-                if let EvaluationType::Function { env, .. } = &value {
-                    env.borrow_mut().insert(identifier.clone(), value.clone());
-                }
-                self.env.insert(identifier.clone(), value);
+                self.define(identifier.clone(), value);
                 Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
             AST::FunctionDeclaration {
@@ -216,14 +311,12 @@ impl Interpreter {
                 body,
                 ..
             } => {
-                let closure_env = Rc::new(RefCell::new(self.env.clone()));
                 let func = EvaluationType::Function {
-                    parameters: parameters.clone().iter().map(|p| p.clone().0).collect(),
-                    body: Box::new(*body.clone()),
-                    env: Rc::clone(&closure_env),
+                    parameters: parameters.iter().map(|(param, _)| param.clone()).collect(),
+                    body: body.clone(),
+                    env: Rc::clone(&self.current_env),
                 };
-                closure_env.borrow_mut().insert(name.clone(), func.clone());
-                self.env.insert(name.clone(), func);
+                self.define(name.clone(), func.clone());
                 Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
             AST::Return { expr, .. } => match self.eval(expr)? {
@@ -236,7 +329,6 @@ impl Interpreter {
                 arguments,
                 span,
             } => {
-                // TODO: rework error handling
                 let (parameters, body, captured_env) = match self.eval(callee)? {
                     EvalOutcome::Value(EvaluationType::Function {
                         parameters,
@@ -265,19 +357,22 @@ impl Interpreter {
                     ));
                 }
 
-                let mut local_env = captured_env.borrow().clone();
-                for (param, arg) in parameters.iter().zip(arguments) {
+                let call_env = Rc::new(RefCell::new(EnvFrame::new(Some(Rc::clone(&captured_env)))));
+                for (param, arg) in parameters.iter().zip(arguments.iter()) {
                     let arg_value = match self.eval(arg)? {
                         EvalOutcome::Value(value) => value,
                         control_flow => return Ok(control_flow),
                     };
-                    local_env.insert(param.clone(), arg_value);
+                    call_env
+                        .borrow_mut()
+                        .values
+                        .insert(param.clone(), arg_value);
                 }
 
-                // Temporarily set the environment to the local one
-                let old_env = std::mem::replace(&mut self.env, local_env);
+                let previous_env = Rc::clone(&self.current_env);
+                self.current_env = call_env;
                 let result = self.eval(&body);
-                self.env = old_env; // Restore the previous environment
+                self.current_env = previous_env;
 
                 match result? {
                     EvalOutcome::Return(value) => Ok(EvalOutcome::Value(value)),
@@ -292,11 +387,10 @@ impl Interpreter {
             AST::FunctionExpression {
                 parameters, body, ..
             } => {
-                let closure_env = Rc::new(RefCell::new(self.env.clone()));
                 let func = EvaluationType::Function {
-                    parameters: parameters.iter().map(|p| p.0.clone()).collect(),
-                    body: Box::new(*body.clone()),
-                    env: Rc::clone(&closure_env),
+                    parameters: parameters.iter().map(|(param, _)| param.clone()).collect(),
+                    body: body.clone(),
+                    env: Rc::clone(&self.current_env),
                 };
                 Ok(EvalOutcome::Value(func))
             }
@@ -316,18 +410,15 @@ impl Interpreter {
                 })?;
                 Ok(EvalOutcome::Value(EvaluationType::Bool(parsed)))
             }
-            AST::Identifier { name, span } => self
-                .env
-                .get(name)
-                .cloned()
-                .map(EvalOutcome::Value)
-                .ok_or_else(|| {
+            AST::Identifier { name, span } => {
+                self.lookup(name).map(EvalOutcome::Value).ok_or_else(|| {
                     FlavorError::with_span(
                         ErrorPhase::Runtime,
                         format!("Undefined variable: {name}"),
                         *span,
                     )
-                }),
+                })
+            }
             AST::ArrayLiteral { elements, .. } => {
                 let mut values = Vec::with_capacity(elements.len());
                 for elem in elements {
@@ -393,79 +484,196 @@ impl Interpreter {
                     // Assignment
                     (_lt, rt, "=") => match &**left {
                         AST::Identifier { name, .. } => {
-                            if !self.env.contains_key(name) {
+                            if !self.assign_existing(name, rt.clone()) {
                                 return Err(FlavorError::with_span(
                                     ErrorPhase::Runtime,
                                     format!("Undefined variable: {name}"),
                                     *left.span(),
                                 ));
                             }
-                            self.env.insert(name.clone(), rt.clone());
                             Ok(EvalOutcome::Value(rt))
                         }
-                        AST::ArrayAccess { array, index, .. } => {
-                            let array_name = if let AST::Identifier { name, .. } = &**array {
-                                name
-                            } else {
-                                return Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    "Left side of assignment must be an identifier or array access",
-                                    *array.span(),
-                                ));
+                        AST::ArrayAccess { .. } => {
+                            let mut index_nodes = Vec::new();
+                            let mut current = left.as_ref();
+                            let (base_name, base_span) = loop {
+                                match current {
+                                    AST::Identifier { name, span } => break (name.clone(), *span),
+                                    AST::ArrayAccess { array, index, .. } => {
+                                        index_nodes.push((
+                                            index.as_ref(),
+                                            *index.span(),
+                                            *array.span(),
+                                        ));
+                                        current = array.as_ref();
+                                    }
+                                    _ => {
+                                        return Err(FlavorError::with_span(
+                                            ErrorPhase::Runtime,
+                                            "Left side of assignment must be an identifier or array access",
+                                            *current.span(),
+                                        ));
+                                    }
+                                }
                             };
 
-                            let index_value = match self.eval(index)? {
-                                EvalOutcome::Value(value) => value,
-                                control_flow => return Ok(control_flow),
-                            };
-                            let index_int = if let EvaluationType::Int(i) = index_value {
-                                i
-                            } else {
-                                return Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    "Array index must be an integer",
-                                    *index.span(),
-                                ));
-                            };
-
-                            if index_int < 0 {
-                                return Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    "Negative array index",
-                                    *index.span(),
-                                ));
+                            let mut index_chain = Vec::with_capacity(index_nodes.len());
+                            for &(index_ast, index_span, array_span) in index_nodes.iter().rev() {
+                                let index_value = match self.eval(index_ast)? {
+                                    EvalOutcome::Value(value) => value,
+                                    control_flow => return Ok(control_flow),
+                                };
+                                let idx_int = if let EvaluationType::Int(i) = index_value {
+                                    i
+                                } else {
+                                    return Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        "Array index must be an integer",
+                                        index_span,
+                                    ));
+                                };
+                                if idx_int < 0 {
+                                    return Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        "Negative array index",
+                                        index_span,
+                                    ));
+                                }
+                                index_chain.push((idx_int as usize, index_span, array_span));
                             }
-                            let array_values = self.env.get_mut(array_name).ok_or_else(|| {
+
+                            let target_env = self.find_env_for(&base_name).ok_or_else(|| {
                                 FlavorError::with_span(
                                     ErrorPhase::Runtime,
-                                    format!("Undefined variable: {array_name}"),
-                                    *array.span(),
+                                    format!("Undefined variable: {base_name}"),
+                                    base_span,
                                 )
                             })?;
 
-                            match array_values {
-                                EvaluationType::Array(arr) => {
-                                    let idx = index_int as usize;
-                                    if idx >= arr.len() {
-                                        let len = arr.len();
+                            let mut env_ref = target_env.borrow_mut();
+                            let mut target =
+                                env_ref.values.get_mut(&base_name).ok_or_else(|| {
+                                    FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        format!("Undefined variable: {base_name}"),
+                                        base_span,
+                                    )
+                                })?;
+
+                            let last_index = index_chain.len().saturating_sub(1);
+                            for (depth, (idx, index_span, array_span)) in
+                                index_chain.into_iter().enumerate()
+                            {
+                                match target {
+                                    EvaluationType::Array(arr) => {
+                                        if idx >= arr.len() {
+                                            let message = if depth == 0 {
+                                                let len = arr.len();
+                                                format!(
+                                                    "Index {idx} out of bounds for array '{base_name}' of length {len}"
+                                                )
+                                            } else {
+                                                "Array index out of bounds".to_string()
+                                            };
+                                            return Err(FlavorError::with_span(
+                                                ErrorPhase::Runtime,
+                                                message,
+                                                index_span,
+                                            ));
+                                        }
+                                        if depth == last_index {
+                                            arr[idx] = rt.clone();
+                                            return Ok(EvalOutcome::Value(rt));
+                                        }
+                                        target = &mut arr[idx];
+                                    }
+                                    _ => {
+                                        let span = if depth == 0 { base_span } else { array_span };
+                                        let message = if depth == 0 {
+                                            format!("Variable '{base_name}' is not an array")
+                                        } else {
+                                            "Value is not an array".to_string()
+                                        };
                                         return Err(FlavorError::with_span(
                                             ErrorPhase::Runtime,
-                                            format!(
-                                                "Index {idx} out of bounds for array '{array_name}' of length {len}"
-                                            ),
-                                            *index.span(),
+                                            message,
+                                            span,
                                         ));
                                     }
-                                    arr[idx] = rt.clone();
-                                    Ok(EvalOutcome::Value(rt))
                                 }
-                                _ => Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    format!("Variable '{array_name}' is not an array"),
-                                    *array.span(),
-                                )),
                             }
+
+                            unreachable!("Array assignment without indices");
                         }
+                        // AST::ArrayAccess { array, index, .. } => {
+                        //     let array_name = if let AST::Identifier { name, .. } = &**array {
+                        //         name
+                        //     } else {
+                        //         return Err(FlavorError::with_span(
+                        //             ErrorPhase::Runtime,
+                        //             "Left side of assignment must be an identifier or array access",
+                        //             *array.span(),
+                        //         ));
+                        //     };
+                        //
+                        //     let index_value = match self.eval(index)? {
+                        //         EvalOutcome::Value(value) => value,
+                        //         control_flow => return Ok(control_flow),
+                        //     };
+                        //     let index_int = if let EvaluationType::Int(i) = index_value {
+                        //         i
+                        //     } else {
+                        //         return Err(FlavorError::with_span(
+                        //             ErrorPhase::Runtime,
+                        //             "Array index must be an integer",
+                        //             *index.span(),
+                        //         ));
+                        //     };
+                        //
+                        //     if index_int < 0 {
+                        //         return Err(FlavorError::with_span(
+                        //             ErrorPhase::Runtime,
+                        //             "Negative array index",
+                        //             *index.span(),
+                        //         ));
+                        //     }
+                        //     let target_env = self.find_env_for(array_name).ok_or_else(|| {
+                        //         FlavorError::with_span(
+                        //             ErrorPhase::Runtime,
+                        //             format!("Undefined variable: {array_name}"),
+                        //             *array.span(),
+                        //         )
+                        //     })?;
+                        //
+                        //     let mut env_ref = target_env.borrow_mut();
+                        //     match env_ref.values.get_mut(array_name) {
+                        //         Some(EvaluationType::Array(arr)) => {
+                        //             let idx = index_int as usize;
+                        //             if idx >= arr.len() {
+                        //                 let len = arr.len();
+                        //                 return Err(FlavorError::with_span(
+                        //                     ErrorPhase::Runtime,
+                        //                     format!(
+                        //                         "Index {idx} out of bounds for array '{array_name}' of length {len}"
+                        //                     ),
+                        //                     *index.span(),
+                        //                 ));
+                        //             }
+                        //             arr[idx] = rt.clone();
+                        //             Ok(EvalOutcome::Value(rt))
+                        //         }
+                        //         Some(_) => Err(FlavorError::with_span(
+                        //             ErrorPhase::Runtime,
+                        //             format!("Variable '{array_name}' is not an array"),
+                        //             *array.span(),
+                        //         )),
+                        //         None => Err(FlavorError::with_span(
+                        //             ErrorPhase::Runtime,
+                        //             format!("Undefined variable: {array_name}"),
+                        //             *array.span(),
+                        //         )),
+                        //     }
+                        // }
                         _ => Err(FlavorError::with_span(
                             ErrorPhase::Runtime,
                             "Left side of assignment must be an identifier or array access",
@@ -624,7 +832,16 @@ impl Interpreter {
                         index_chain.push((idx_int as usize, *index_span, *array_span));
                     }
 
-                    let mut target = self.env.get_mut(&base_name).ok_or_else(|| {
+                    let target_env = self.find_env_for(&base_name).ok_or_else(|| {
+                        FlavorError::with_span(
+                            ErrorPhase::Runtime,
+                            format!("Undefined variable: {base_name}"),
+                            base_span,
+                        )
+                    })?;
+
+                    let mut env_ref = target_env.borrow_mut();
+                    let mut target = env_ref.values.get_mut(&base_name).ok_or_else(|| {
                         FlavorError::with_span(
                             ErrorPhase::Runtime,
                             format!("Undefined variable: {base_name}"),

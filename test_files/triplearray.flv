@@ -1,7 +1,0 @@
-let arr: array(array(array(int))) = [[[0, 2]]];
-
-
---arr[0][0][0];
-arr[0][0][1]--;
-print arr[0][0][0];
-print arr[0][0][1];

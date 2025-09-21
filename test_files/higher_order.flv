@@ -1,0 +1,13 @@
+fn make_counter(start: int) -> () -> int {
+    let current = start;
+    return fn () -> int {
+        return current++;
+    };
+}
+let counter = make_counter(10);
+print counter();
+print counter();
+print counter();
+let other = make_counter(0);
+print other();
+print counter();

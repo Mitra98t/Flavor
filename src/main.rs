@@ -79,3 +79,51 @@ fn main() {
         report_and_exit(err, &code);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::Path;
+
+    fn run_test_file(file_path: &str) {
+        let code = fs::read_to_string(file_path).expect("Failed to read test file");
+
+        let mut lexer = Lexer::new(&code);
+        let lex_res = lexer.lexe();
+        if let Err(err) = lex_res {
+            panic!("Lexing error in {}: {}", file_path, err.render(&code));
+        }
+
+        let mut parser = Parser::new(lexer.tokens);
+        let nodes = match parser.parse_program() {
+            Ok(nodes) => nodes,
+            Err(err) => panic!("Parsing error in {}: {}", file_path, err.render(&code)),
+        };
+
+        let mut tc = TypeChecker::new();
+        if let Err(err) = tc.check_program(&nodes) {
+            panic!(
+                "Type checking error in {}: {}",
+                file_path,
+                err.render(&code)
+            );
+        }
+
+        let mut interpreter = Interpreter::new();
+        if let Err(err) = interpreter.eval_program(&nodes) {
+            panic!("Runtime error in {}: {}", file_path, err.render(&code));
+        }
+    }
+    #[test]
+    fn test_all_flavor_files() {
+        let test_dir = "test_files";
+        let paths = fs::read_dir(test_dir).expect("Failed to read test directory");
+        for path in paths {
+            let path = path.expect("Failed to read path").path();
+            if path.extension().and_then(|s| s.to_str()) == Some("flv") {
+                run_test_file(path.to_str().unwrap());
+            }
+        }
+    }
+}

@@ -1,5 +1,0 @@
-let arr: array(array(int)) = [[1]];
-
-arr[0][0] ++;
-
-print arr[0][0];

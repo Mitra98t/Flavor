@@ -1,4 +1,11 @@
-let arr: array(array(int)) = [[0]];
+fn foo () -> () ->int {
+  let count = 0;
+  return fn() -> int {
+    return ++count;
+  };
+}
 
-print arr[0][0]++;
-print ++arr[0][0];
+let counter = foo();
+print counter();
+print counter();
+print counter();
