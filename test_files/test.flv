@@ -1,9 +1,2 @@
-let base: int = 10;
-let make_adder = <offset: int> -> (int) -> int {
-    return <value: int> -> int {
-        return value + offset + base;
-    };
-};
-let add_five = make_adder(5);
-add_five(3);
-
+let x = 0;
+x++;

@@ -577,7 +577,29 @@ impl TypeChecker {
                             ))
                         }
                     }
-                    "-" | "+" | "--" | "++" => {
+                    "--" | "++" => {
+                        if self.ensure_assignable(operand).is_err() {
+                            return Err(FlavorError::with_span(
+                                ErrorPhase::TypeChecking,
+                                format!(
+                                    "Unary operator '{operator}' requires an assignable operand",
+                                ),
+                                *span,
+                            ));
+                        }
+                        if operand_ty == Type::Int {
+                            Ok((Type::Int, false))
+                        } else {
+                            Err(FlavorError::with_span(
+                                ErrorPhase::TypeChecking,
+                                format!(
+                                    "Unary operator '{operator}' requires Integer operand but found {operand_ty:?}",
+                                ),
+                                *span,
+                            ))
+                        }
+                    }
+                    "-" | "+" => {
                         if operand_ty == Type::Int {
                             Ok((Type::Int, false))
                         } else {
