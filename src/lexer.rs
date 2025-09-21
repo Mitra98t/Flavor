@@ -187,6 +187,15 @@ impl Lexer {
     }
 
     fn consume_n_char(&mut self, n: usize) {
-        self.pos += n;
+        let text = &self.source[self.pos..self.pos + n];
+        for ch in text.chars() {
+            if ch == '\n' {
+                self.line += 1;
+                self.column = 1;
+            } else {
+                self.column += 1;
+            }
+        }
+        self.pos += text.len();
     }
 }

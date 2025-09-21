@@ -81,10 +81,24 @@ impl TypeChecker {
                     return Ok((Type::Array(Box::new(Type::Unit)), false));
                 }
 
+                let expected_element_type =
+                    if let Some(Type::Array(expected)) = self.current_expected_type.clone() {
+                        Some(*expected.clone())
+                    } else {
+                        None
+                    };
+
                 let mut element_type: Option<Type> = None;
 
                 for elem in elements {
-                    let (elem_ty, _returns) = self.check(elem)?;
+                    let (elem_ty, _returns) =
+                        if let Some(ref expected_elem_ty) = expected_element_type {
+                            self.with_expected_type(Some(expected_elem_ty.clone()), |tc| {
+                                tc.check(elem)
+                            })?
+                        } else {
+                            self.check(elem)?
+                        };
                     if let Some(ref t) = element_type {
                         if *t != elem_ty {
                             return Err(FlavorError::with_span(
@@ -96,7 +110,7 @@ impl TypeChecker {
                             ));
                         }
                     } else {
-                        element_type = Some(elem_ty);
+                        element_type = Some(elem_ty.clone());
                     }
                 }
 
