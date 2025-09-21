@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn lexer_handles_literals_and_delimiters() {
         let names = token_names(
-            r#"alias => value; fn f() -> array(string) { print "hi", data[0]; return nothing; }"#,
+            r#"alias => value; fn f() -> [string] { print "hi", data[0]; return nothing; }"#,
         );
         assert_eq!(
             names,
@@ -192,10 +192,9 @@ mod tests {
                 TN::LPar,
                 TN::RPar,
                 TN::SlimArrow,
-                TN::Array,
-                TN::LPar,
+                TN::LSqu,
                 TN::String,
-                TN::RPar,
+                TN::RSqu,
                 TN::LBra,
                 TN::Print,
                 TN::StringLiteral,
@@ -349,7 +348,7 @@ fn bad(n: int) -> int {
 
     #[test]
     fn typechecker_detects_array_element_type_mismatch() {
-        let nodes = parse_source("let xs: array(int) = [1, true];")
+        let nodes = parse_source("let xs: [int] = [1, true];")
             .expect("failed to parse array literal source");
         let err = type_check_nodes(&nodes).expect_err("type checker should reject mixed arrays");
         assert!(matches!(err.phase, ErrorPhase::TypeChecking));
@@ -419,7 +418,7 @@ let value = add(1);
     #[test]
     fn typechecker_accepts_matrix_manipulation() {
         let source = r#"
-let matrix: array(array(int)) = [[1, 2], [3, 4]];
+let matrix: [[int]] = [[1, 2], [3, 4]];
 matrix[0][1] = matrix[1][0];
 matrix[1][1]++;
 let value: int = matrix[0][1] + matrix[1][1];
@@ -445,8 +444,8 @@ x;
     fn interpreter_supports_closures_and_calls() {
         let source = r#"
 let base: int = 10;
-let make_adder = fn (offset: int) -> (int) -> int {
-    return fn (value: int) -> int {
+let make_adder = <offset: int> -> (int) -> int {
+    return <value: int> -> int {
         return value + offset + base;
     };
 };
@@ -482,7 +481,7 @@ total;
     #[test]
     fn interpreter_performs_array_indexing_and_assignment() {
         let source = r#"
-let values: array(int) = [0, 1, 2];
+let values: [int] = [0, 1, 2];
 values[1] = 10;
 values[1];
 "#;
@@ -495,7 +494,7 @@ values[1];
     #[test]
     fn interpreter_reports_runtime_errors_for_out_of_bounds_access() {
         let source = r#"
-let data: array(int) = [0];
+let data: [int] = [0];
 data[5];
 "#;
         let err = evaluate_source(source).expect_err("runtime error expected");
@@ -527,7 +526,7 @@ factorial(5);
     #[test]
     fn interpreter_manages_matrices_with_mixed_increments() {
         let source = r#"
-let matrix: array(array(int)) = [[1, 2], [3, 4]];
+let matrix: [[int]] = [[1, 2], [3, 4]];
 matrix[0][1] = matrix[1][0];
 matrix[1][1]++;
 ++matrix[0][0];
@@ -542,9 +541,9 @@ matrix[0][1] + matrix[1][1] + matrix[0][0];
     #[test]
     fn interpreter_closure_clones_share_state() {
         let source = r#"
-let make_tick = fn (start: int) -> () -> int {
+let make_tick = <start: int> -> () -> int {
     let value: int = start;
-    return fn () -> int {
+    return <> -> int {
         ++value;
         return value;
     };

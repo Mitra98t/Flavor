@@ -461,25 +461,63 @@ impl Parser {
                     span: tok.span,
                 })
             }
-            TN::Fn => {
-                let fn_tok = self.expect_tok(TN::Fn)?;
-                let (parameters, params_type) = self.parse_fn_parameters()?;
+            TN::Lt => {
+                let lt_tok = self.expect_tok(TN::Lt)?;
+
+                let mut span = lt_tok.span;
+                let mut params: Vec<(String, Type)> = vec![];
+                if self.current_tok().tok_name != TN::Gt {
+                    loop {
+                        let param_name = self.expect_tok(TN::Identifier)?;
+                        span = span.merge(&param_name.span);
+                        let colon_tok = self.expect_tok(TN::Colon)?;
+                        span = span.merge(&colon_tok.span);
+                        let (param_ty, ty_span) = self.parse_type()?;
+                        span = span.merge(&ty_span);
+                        params.push((param_name.lexeme, param_ty));
+                        if self.current_tok().tok_name == TN::Comma {
+                            let comma = self.expect_tok(TN::Comma)?;
+                            span = span.merge(&comma.span);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                let gt_tok = self.expect_tok(TN::Gt)?;
                 let arrow_tok = self.expect_tok(TN::SlimArrow)?;
                 let (return_ty, return_span) = self.parse_type()?;
                 let body = self.parse_body()?;
-                let span = fn_tok
-                    .span
-                    .merge(&params_type)
+                let span = span
+                    .merge(&gt_tok.span)
                     .merge(&arrow_tok.span)
                     .merge(&return_span)
                     .merge(body.span());
                 Ok(ASTNode::FunctionExpression {
-                    parameters,
+                    parameters: params,
                     return_type: return_ty,
                     body: Box::new(body),
                     span,
                 })
             }
+            // TN::Fn => {
+            //     let fn_tok = self.expect_tok(TN::Fn)?;
+            //     let (parameters, params_type) = self.parse_fn_parameters()?;
+            //     let arrow_tok = self.expect_tok(TN::SlimArrow)?;
+            //     let (return_ty, return_span) = self.parse_type()?;
+            //     let body = self.parse_body()?;
+            //     let span = fn_tok
+            //         .span
+            //         .merge(&params_type)
+            //         .merge(&arrow_tok.span)
+            //         .merge(&return_span)
+            //         .merge(body.span());
+            //     Ok(ASTNode::FunctionExpression {
+            //         parameters,
+            //         return_type: return_ty,
+            //         body: Box::new(body),
+            //         span,
+            //     })
+            // }
             TN::LSqu => {
                 let lsqu = self.expect_tok(TN::LSqu)?;
                 let mut span = lsqu.span;
@@ -551,16 +589,11 @@ impl Parser {
                 let tok = self.expect_tok(TN::Identifier)?;
                 Ok((Type::Custom(tok.lexeme), tok.span))
             }
-            TN::Array => {
-                let array_tok = self.expect_tok(TN::Array)?;
-                let lpar = self.expect_tok(TN::LPar)?;
+            TN::LSqu => {
+                let array_tok = self.expect_tok(TN::LSqu)?;
                 let (element_type, element_span) = self.parse_type()?;
-                let rpar = self.expect_tok(TN::RPar)?;
-                let span = array_tok
-                    .span
-                    .merge(&lpar.span)
-                    .merge(&element_span)
-                    .merge(&rpar.span);
+                let rpar = self.expect_tok(TN::RSqu)?;
+                let span = array_tok.span.merge(&element_span).merge(&rpar.span);
                 Ok((Type::Array(Box::new(element_type)), span))
             }
             TN::LPar => self.parse_function_type_signature(),
