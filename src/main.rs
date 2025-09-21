@@ -23,6 +23,11 @@ fn main() {
         std::process::exit(1);
     }
     let filename = &args[1];
+    //check file extension
+    if !filename.ends_with(".flv") {
+        eprintln!("Error: Source file must have a .flv extension");
+        std::process::exit(1);
+    }
     let code = std::fs::read_to_string(filename).expect("Failed to read source file");
 
     let debug = false;
