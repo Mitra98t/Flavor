@@ -1,6 +1,7 @@
-use crate::types::{ASTNode, Token, TokenName as TN, Type};
+use crate::error::{ErrorPhase, FlavorError};
+use crate::types::{ASTNode, Span, Token, TokenName as TN, Type};
 
-type ParseProduction = Result<ASTNode, String>;
+type ParseProduction = Result<ASTNode, FlavorError>;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -26,7 +27,7 @@ impl Parser {
     /// The method consumes the tokens if it is correct.
     /// Returns a result with the token if success or the error string if failure.
     /// * `expected`: the expected token name
-    fn expect_tok(&mut self, expected: TN) -> Result<Token, String> {
+    fn expect_tok(&mut self, expected: TN) -> Result<Token, FlavorError> {
         let tok = self.current_tok();
 
         if tok.tok_name == expected {
@@ -34,14 +35,13 @@ impl Parser {
             self.consume_tok();
             Ok(tok)
         } else {
-            println!(
-                "Error at token index {}: ... {} ...",
-                self.pos,
-                self.tokens_around_index(self.pos, 3)
-            );
-            Err(format!(
-                "Expected token {:?}, found {:?} ('{}')",
-                expected, tok.tok_name, tok.lexeme
+            Err(FlavorError::with_span(
+                ErrorPhase::Parsing,
+                format!(
+                    "Expected token {:?} found {:?} ('{}')",
+                    expected, tok.tok_name, tok.lexeme
+                ),
+                tok.span,
             ))
         }
     }
@@ -62,7 +62,7 @@ impl Parser {
         }
     }
 
-    pub fn parse_program(&mut self) -> Result<Vec<ASTNode>, String> {
+    pub fn parse_program(&mut self) -> Result<Vec<ASTNode>, FlavorError> {
         let mut nodes = Vec::new();
         while self.current_tok().tok_name != TN::Eof {
             nodes.push(self.parse_statement()?);
@@ -87,7 +87,8 @@ impl Parser {
     }
 
     fn parse_print_statement(&mut self) -> ParseProduction {
-        self.expect_tok(TN::Print)?;
+        let print_tok = self.expect_tok(TN::Print)?;
+        let mut span = print_tok.span;
         let mut expressions = vec![];
         while self.current_tok().tok_name != TN::Semicolon {
             let expr = self.parse_expression()?;
@@ -98,29 +99,38 @@ impl Parser {
                 break;
             }
         }
-        self.expect_tok(TN::Semicolon)?;
-        Ok(ASTNode::Print(expressions))
+        let semicolon = self.expect_tok(TN::Semicolon)?;
+        span = span.merge(&semicolon.span);
+        Ok(ASTNode::Print { expressions, span })
     }
 
     fn parse_while(&mut self) -> ParseProduction {
-        self.expect_tok(TN::While)?;
+        let while_tok = self.expect_tok(TN::While)?;
         let guard = self.parse_expression()?;
         let body = self.parse_body()?;
+
+        let span = while_tok.span.merge(guard.span()).merge(body.span());
 
         Ok(ASTNode::While {
             guard: Box::new(guard),
             body: Box::new(body),
+            span,
         })
     }
 
     fn parse_if(&mut self) -> ParseProduction {
-        self.expect_tok(TN::If)?;
+        let if_tok = self.expect_tok(TN::If)?;
         let guard = self.parse_expression()?;
         let then_body = self.parse_body()?;
+
+        let mut span = if_tok.span.merge(guard.span()).merge(then_body.span());
+
         let mut else_body = None;
         if self.current_tok().tok_name == TN::Else {
-            self.expect_tok(TN::Else)?;
-            else_body = Some(Box::new(self.parse_body()?));
+            let else_tok = self.expect_tok(TN::Else)?;
+            let parsed_else_body = self.parse_body()?;
+            span = span.merge(&else_tok.span).merge(parsed_else_body.span());
+            else_body = Some(Box::new(parsed_else_body));
         }
         // HACK: IF WITH Semicolon??
         // self.expect_tok(TN::Semicolon)?;
@@ -128,131 +138,183 @@ impl Parser {
             guard: Box::new(guard),
             then_body: Box::new(then_body),
             else_body,
+            span,
         })
     }
     fn parse_break(&mut self) -> ParseProduction {
-        self.expect_tok(TN::Break)?;
-        self.expect_tok(TN::Semicolon)?;
-        Ok(ASTNode::Break)
+        let break_tok = self.expect_tok(TN::Break)?;
+        let semicolon = self.expect_tok(TN::Semicolon)?;
+        let _span = break_tok.span.merge(&semicolon.span);
+
+        Ok(ASTNode::Break {
+            span: break_tok.span,
+        })
     }
 
     fn parse_return(&mut self) -> ParseProduction {
-        self.expect_tok(TN::Return)?;
-        let mut expr = Box::new(ASTNode::UnitLiteral);
+        let return_tok = self.expect_tok(TN::Return)?;
+        let mut span = return_tok.span;
+        let mut expr = Box::new(ASTNode::UnitLiteral {
+            span: return_tok.span.clone(),
+        });
         if self.current_tok().tok_name != TN::Semicolon {
             expr = Box::new(self.parse_expression()?);
+            span = span.merge(&expr.span());
         }
-        self.expect_tok(TN::Semicolon)?;
-        Ok(ASTNode::Return(expr))
+        let semicolon = self.expect_tok(TN::Semicolon)?;
+        span = span.merge(&semicolon.span);
+        Ok(ASTNode::Return { expr, span })
     }
 
     fn parse_function_declaration(&mut self) -> ParseProduction {
-        self.expect_tok(TN::Fn)?;
+        let fn_tok = self.expect_tok(TN::Fn)?;
         let fn_name = self.expect_tok(TN::Identifier)?;
 
-        let parameters = self.parse_fn_parameters()?;
+        let (parameters, params_span) = self.parse_fn_parameters()?;
 
-        self.expect_tok(TN::SlimArrow)?;
+        let arrow_tok = self.expect_tok(TN::SlimArrow)?;
 
-        let return_ty = self.parse_type()?;
+        let (return_ty, return_span) = self.parse_type()?;
 
         let body = self.parse_body()?;
+
+        let span = fn_tok
+            .span
+            .merge(&fn_name.span)
+            .merge(&params_span)
+            .merge(&arrow_tok.span)
+            .merge(&return_span)
+            .merge(&body.span());
 
         Ok(ASTNode::FunctionDeclaration {
             name: fn_name.lexeme,
             parameters,
             return_type: return_ty,
             body: Box::new(body),
+            span,
         })
     }
 
-    fn parse_body(&mut self) -> Result<ASTNode, String> {
-        assert_eq!(TN::LBra, self.current_tok().tok_name);
-        self.expect_tok(TN::LBra)?;
+    fn parse_body(&mut self) -> ParseProduction {
+        let lbra = self.expect_tok(TN::LBra)?;
 
         let mut statements: Vec<ASTNode> = vec![];
+        let mut span = lbra.span;
         while self.current_tok().tok_name != TN::RBra {
             let statement = self.parse_statement()?;
+            span = span.merge(&statement.span());
             statements.push(statement);
         }
-        self.expect_tok(TN::RBra)?;
-        Ok(ASTNode::Body { nodes: statements })
+        let rbra = self.expect_tok(TN::RBra)?;
+        span = span.merge(&rbra.span);
+        Ok(ASTNode::Body {
+            nodes: statements,
+            span,
+        })
     }
 
-    fn parse_fn_parameters(&mut self) -> Result<Vec<(String, Type)>, String> {
-        self.expect_tok(TN::LPar)?;
+    fn parse_fn_parameters(&mut self) -> Result<(Vec<(String, Type)>, Span), FlavorError> {
+        let lpar = self.expect_tok(TN::LPar)?;
+        let mut span = lpar.span;
         let mut params: Vec<(String, Type)> = vec![];
-        loop {
-            if self.current_tok().tok_name == TN::RPar {
-                break;
-            }
-            let param_name = self.expect_tok(TN::Identifier)?;
-            self.expect_tok(TN::Colon)?;
-            let param_ty = self.parse_type()?;
-            params.push((param_name.lexeme, param_ty));
-            if self.current_tok().tok_name == TN::Comma {
-                self.consume_tok();
-            }
-        }
-
-        self.expect_tok(TN::RPar)?;
-
-        Ok(params)
-    }
-
-    fn parse_function_type_signature(&mut self) -> Result<Type, String> {
-        self.expect_tok(TN::LPar)?;
-        let mut param_types: Vec<Type> = Vec::new();
         if self.current_tok().tok_name != TN::RPar {
             loop {
-                let param_type = self.parse_type()?;
-                param_types.push(param_type);
+                let param_name = self.expect_tok(TN::Identifier)?;
+                span = span.merge(&param_name.span);
+                let colon_tok = self.expect_tok(TN::Colon)?;
+                span = span.merge(&colon_tok.span);
+                let (param_ty, ty_span) = self.parse_type()?;
+                span = span.merge(&ty_span);
+                params.push((param_name.lexeme, param_ty));
                 if self.current_tok().tok_name == TN::Comma {
-                    self.consume_tok();
+                    let comma = self.expect_tok(TN::Comma)?;
+                    span = span.merge(&comma.span);
                 } else {
                     break;
                 }
             }
         }
-        self.expect_tok(TN::RPar)?;
-        self.expect_tok(TN::SlimArrow)?;
-        let return_type = self.parse_type()?;
-        Ok(Type::Function {
-            param_types,
-            return_type: Box::new(return_type),
-        })
+
+        let rpar = self.expect_tok(TN::RPar)?;
+        span = span.merge(&rpar.span);
+
+        Ok((params, span))
+    }
+
+    fn parse_function_type_signature(&mut self) -> Result<(Type, Span), FlavorError> {
+        let lpar = self.expect_tok(TN::LPar)?;
+        let mut span = lpar.span;
+        let mut param_types: Vec<Type> = Vec::new();
+        if self.current_tok().tok_name != TN::RPar {
+            loop {
+                let (param_type, ty_span) = self.parse_type()?;
+                span = span.merge(&ty_span);
+                param_types.push(param_type);
+                if self.current_tok().tok_name == TN::Comma {
+                    let comma = self.expect_tok(TN::Comma)?;
+                    span = span.merge(&comma.span);
+                } else {
+                    break;
+                }
+            }
+        }
+        let rpar = self.expect_tok(TN::RPar)?;
+        span = span.merge(&rpar.span);
+        let slimarrow = self.expect_tok(TN::SlimArrow)?;
+        span = span.merge(&slimarrow.span);
+        let (return_type, ret_span) = self.parse_type()?;
+        span = span.merge(&ret_span);
+        Ok((
+            Type::Function {
+                param_types,
+                return_type: Box::new(return_type),
+            },
+            span,
+        ))
     }
 
     fn parse_let_statement(&mut self) -> ParseProduction {
-        self.expect_tok(TN::Let)?;
+        let let_tok = self.expect_tok(TN::Let)?;
+        let mut span = let_tok.span;
         let id_tok = self.expect_tok(TN::Identifier)?;
+        span = span.merge(&id_tok.span);
 
         // Optional Type definition
         let var_type: Option<Type> = if self.current_tok().tok_name == TN::Colon {
-            // The type is being defined (there is the colon `:`)
-            self.consume_tok();
-            Some(self.parse_type()?)
+            let colon_tok = self.expect_tok(TN::Colon)?;
+            span = span.merge(&colon_tok.span);
+            let (ty, ty_span) = self.parse_type()?;
+            span = span.merge(&ty_span);
+            Some(ty)
         } else {
             None
         };
 
         // Necessary initialization??
-        self.expect_tok(TN::Assign)?;
+        let assign_tok = self.expect_tok(TN::Assign)?;
+        span = span.merge(&assign_tok.span);
         let expr = self.parse_expression()?;
-        self.expect_tok(TN::Semicolon)?;
+        span = span.merge(expr.span());
+        let semicolon = self.expect_tok(TN::Semicolon)?;
+        span = span.merge(&semicolon.span);
 
         // Return of the AST
         Ok(ASTNode::LetDeclaration {
             identifier: id_tok.lexeme,
             var_type,
             expr: Box::new(expr),
+            span,
         })
     }
 
     fn parse_expression_statement(&mut self) -> ParseProduction {
         let expr = self.parse_expression()?;
-        self.expect_tok(TN::Semicolon)?;
-        Ok(ASTNode::ExpressionStatement(Box::new(expr)))
+        let semicolon = self.expect_tok(TN::Semicolon)?;
+        let span = expr.span().merge(&semicolon.span);
+        Ok(ASTNode::ExpressionStatement {
+            expr: Box::new(expr),
+            span,
+        })
     }
 
     fn parse_expression(&mut self) -> ParseProduction {
@@ -271,10 +333,12 @@ impl Parser {
             self.consume_tok();
 
             let right = self.parse_binary_expression(prec + 1)?;
+            let span = left.span().merge(&op_tok.span).merge(right.span());
             left = ASTNode::BinaryExpression {
                 left: Box::new(left),
                 operator: op_tok.lexeme,
                 right: Box::new(right),
+                span,
             }
         }
         Ok(left)
@@ -288,38 +352,52 @@ impl Parser {
                 TN::PlusPlus | TN::MinusMinus => {
                     let op_tok = self.current_tok().clone();
                     self.consume_tok();
+                    let span = expr.span().merge(&op_tok.span);
                     expr = ASTNode::UnaryExpression {
                         operator: op_tok.lexeme,
                         operand: Box::new(expr),
                         is_postfix: true,
+                        span,
                     };
                 }
                 TN::LSqu => {
-                    self.consume_tok();
+                    let lsqu = self.expect_tok(TN::LSqu)?;
                     let index_expr = self.parse_expression()?;
-                    self.expect_tok(TN::RSqu)?;
+                    let rsqu = self.expect_tok(TN::RSqu)?;
+                    let span = expr
+                        .span()
+                        .merge(&lsqu.span)
+                        .merge(index_expr.span())
+                        .merge(&rsqu.span);
                     expr = ASTNode::ArrayAccess {
                         array: Box::new(expr),
                         index: Box::new(index_expr),
+                        span,
                     };
                 }
                 TN::LPar => {
-                    self.consume_tok();
+                    let lpar = self.expect_tok(TN::LPar)?;
+                    let mut span = expr.span().merge(&lpar.span);
                     let mut arguments = Vec::new();
                     if self.current_tok().tok_name != TN::RPar {
                         loop {
-                            arguments.push(self.parse_expression()?);
+                            let arg = self.parse_expression()?;
+                            span = span.merge(arg.span());
+                            arguments.push(arg);
                             if self.current_tok().tok_name == TN::Comma {
-                                self.consume_tok();
+                                let comma = self.expect_tok(TN::Comma)?;
+                                span = span.merge(&comma.span);
                             } else {
                                 break;
                             }
                         }
                     }
-                    self.expect_tok(TN::RPar)?;
+                    let rpar = self.expect_tok(TN::RPar)?;
+                    span = span.merge(&rpar.span);
                     expr = ASTNode::FunctionCall {
                         callee: Box::new(expr),
                         arguments,
+                        span,
                     };
                 }
                 _ => break,
@@ -338,10 +416,12 @@ impl Parser {
 
                 // dparse operand recursively as unary expression to support chaining
                 let operand = self.parse_unary_expression()?;
+                let span = tok.span.merge(operand.span());
                 Ok(ASTNode::UnaryExpression {
                     operator: tok.lexeme,
                     operand: Box::new(operand),
                     is_postfix: false,
+                    span,
                 })
             }
             _ => self.parse_primary(),
@@ -352,142 +432,149 @@ impl Parser {
         let tok = self.current_tok().clone();
         match tok.tok_name {
             TN::Nothing => {
-                self.consume_tok();
-                Ok(ASTNode::UnitLiteral)
+                let tok = self.expect_tok(TN::Nothing)?;
+                Ok(ASTNode::UnitLiteral { span: tok.span })
             }
             TN::Number => {
-                self.consume_tok();
-                Ok(ASTNode::NumberLiteral(tok.lexeme))
+                let tok = self.expect_tok(TN::Number)?;
+                Ok(ASTNode::NumberLiteral {
+                    value: tok.lexeme,
+                    span: tok.span,
+                })
             }
             TN::True | TN::False => {
-                self.consume_tok();
-                Ok(ASTNode::BoolLiteral(tok.lexeme))
+                let tok_name = tok.tok_name;
+                let tok = match tok_name {
+                    TN::True => self.expect_tok(TN::True)?,
+                    TN::False => self.expect_tok(TN::False)?,
+                    _ => unreachable!(),
+                };
+                Ok(ASTNode::BoolLiteral {
+                    value: tok.lexeme,
+                    span: tok.span,
+                })
             }
             TN::StringLiteral => {
-                self.consume_tok();
-                Ok(ASTNode::StringLiteral(tok.lexeme))
+                let tok = self.expect_tok(TN::StringLiteral)?;
+                Ok(ASTNode::StringLiteral {
+                    value: tok.lexeme,
+                    span: tok.span,
+                })
             }
             TN::Fn => {
-                self.consume_tok();
-                let parameters = self.parse_fn_parameters()?;
-                self.expect_tok(TN::SlimArrow)?;
-                let return_ty = self.parse_type()?;
+                let fn_tok = self.expect_tok(TN::Fn)?;
+                let (parameters, params_type) = self.parse_fn_parameters()?;
+                let arrow_tok = self.expect_tok(TN::SlimArrow)?;
+                let (return_ty, return_span) = self.parse_type()?;
                 let body = self.parse_body()?;
+                let span = fn_tok
+                    .span
+                    .merge(&params_type)
+                    .merge(&arrow_tok.span)
+                    .merge(&return_span)
+                    .merge(&body.span());
                 Ok(ASTNode::FunctionExpression {
                     parameters,
                     return_type: return_ty,
                     body: Box::new(body),
+                    span,
                 })
             }
             TN::LSqu => {
-                self.consume_tok();
+                let lsqu = self.expect_tok(TN::LSqu)?;
+                let mut span = lsqu.span;
                 let mut elements = Vec::new();
                 if self.current_tok().tok_name != TN::RSqu {
                     loop {
                         let elem = self.parse_expression()?;
+                        span = span.merge(elem.span());
                         elements.push(elem);
                         if self.current_tok().tok_name == TN::Comma {
-                            self.consume_tok();
+                            let comma = self.expect_tok(TN::Comma)?;
+                            span = span.merge(&comma.span);
                         } else {
                             break;
                         }
                     }
                 }
-                self.expect_tok(TN::RSqu)?;
-                Ok(ASTNode::ArrayLiteral(elements))
+                let rsqu = self.expect_tok(TN::RSqu)?;
+                span = span.merge(&rsqu.span);
+                Ok(ASTNode::ArrayLiteral { elements, span })
             }
             TN::Identifier => {
-                let name = self.expect_tok(TN::Identifier)?.lexeme;
-                Ok(ASTNode::Identifier(name))
+                let tok = self.expect_tok(TN::Identifier)?;
+                Ok(ASTNode::Identifier {
+                    name: tok.lexeme,
+                    span: tok.span,
+                })
             }
-            // Check for possible function call
-            // TN::Identifier => {
-            //     let name = self.expect_tok(TN::Identifier)?.lexeme;
-            //     if self.current_tok().tok_name == TN::LPar {
-            //         self.consume_tok();
-            //         let mut arguments = Vec::new();
-            //         if self.current_tok().tok_name != TN::RPar {
-            //             loop {
-            //                 let expr_arg = self.parse_expression()?;
-            //                 arguments.push(expr_arg);
-            //
-            //                 if self.current_tok().tok_name == TN::Comma {
-            //                     self.consume_tok();
-            //                 } else {
-            //                     break;
-            //                 }
-            //             }
-            //         }
-            //         self.expect_tok(TN::RPar)?;
-            //         Ok(ASTNode::FunctionCall {
-            //             callee: Box::new(ASTNode::Identifier(name)),
-            //             arguments,
-            //         })
-            //     } else {
-            //         Ok(ASTNode::Identifier(name))
-            //     }
-            // }
             TN::LPar => {
-                self.consume_tok();
+                let _lpar = self.expect_tok(TN::LPar)?;
                 let expr = self.parse_expression()?;
                 self.expect_tok(TN::RPar)?;
                 Ok(expr)
             }
-            _ => Err(format!("Unexpected token in expression: {tok:?}")),
+            _ => Err(FlavorError::with_span(
+                ErrorPhase::Parsing,
+                format!(
+                    "Unexpected token {:?} ('{}') in expression",
+                    tok.tok_name, tok.lexeme
+                ),
+                tok.span,
+            )),
         }
     }
 
-    fn parse_type(&mut self) -> Result<Type, String> {
+    fn parse_type(&mut self) -> Result<(Type, Span), FlavorError> {
         match self.current_tok().tok_name {
             TN::Int => {
-                self.consume_tok();
-                Ok(Type::Int)
+                let tok = self.expect_tok(TN::Int)?;
+                Ok((Type::Int, tok.span))
             }
             TN::Float => {
-                self.consume_tok();
-                Ok(Type::Float)
+                let tok = self.expect_tok(TN::Float)?;
+                Ok((Type::Float, tok.span))
             }
             TN::Bool => {
-                self.consume_tok();
-                Ok(Type::Bool)
+                let tok = self.expect_tok(TN::Bool)?;
+                Ok((Type::Bool, tok.span))
             }
             TN::String => {
-                self.consume_tok();
-                Ok(Type::String)
+                let tok = self.expect_tok(TN::String)?;
+                Ok((Type::String, tok.span))
             }
             TN::Nothing => {
-                self.consume_tok();
-                Ok(Type::Unit)
+                let tok = self.expect_tok(TN::Nothing)?;
+                Ok((Type::Unit, tok.span))
             }
             TN::Identifier => {
-                let id = self.current_tok().lexeme.clone();
-                self.consume_tok();
-                Ok(Type::Custom(id))
+                let tok = self.expect_tok(TN::Identifier)?;
+                Ok((Type::Custom(tok.lexeme), tok.span))
             }
             TN::Array => {
-                self.consume_tok(); // consume 'Array'
-                self.expect_tok(TN::LPar)?;
-                let element_type = self.parse_type()?;
-                self.expect_tok(TN::RPar)?;
-                Ok(Type::Array(Box::new(element_type)))
+                let array_tok = self.expect_tok(TN::Array)?;
+                let lpar = self.expect_tok(TN::LPar)?;
+                let (element_type, element_span) = self.parse_type()?;
+                let rpar = self.expect_tok(TN::RPar)?;
+                let span = array_tok
+                    .span
+                    .merge(&lpar.span)
+                    .merge(&element_span)
+                    .merge(&rpar.span);
+                Ok((Type::Array(Box::new(element_type)), span))
             }
             TN::LPar => self.parse_function_type_signature(),
-            _ => Err("Expected a type".to_string()),
+            _ => {
+                let tok = self.current_tok().clone();
+                Err(FlavorError::with_span(
+                    ErrorPhase::Parsing,
+                    format!(
+                        "Unexpected token {:?} ('{}') in type",
+                        tok.tok_name, tok.lexeme
+                    ),
+                    tok.span,
+                ))
+            }
         }
-    }
-
-    fn tokens_around_index(&self, index: usize, context: usize) -> String {
-        let start = index.saturating_sub(context);
-        let end = if index + context < self.tokens.len() {
-            index + context
-        } else {
-            self.tokens.len() - 1
-        };
-
-        self.tokens[start..=end]
-            .iter()
-            .map(|t| format!("{:?}", t.lexeme))
-            .collect::<Vec<String>>()
-            .join(" ")
     }
 }

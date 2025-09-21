@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+use crate::error::{ErrorPhase, FlavorError};
 use crate::types::{ASTNode as AST, Type};
 
 #[derive(Debug, Clone)]
@@ -93,7 +94,7 @@ impl Interpreter {
         }
     }
 
-    pub fn eval_program(&mut self, nodes: &[AST]) -> Result<EvalOutcome, String> {
+    pub fn eval_program(&mut self, nodes: &[AST]) -> Result<EvalOutcome, FlavorError> {
         let mut last_value = EvaluationType::Unit;
         for node in nodes {
             match self.eval(node)? {
@@ -104,11 +105,11 @@ impl Interpreter {
         Ok(EvalOutcome::Value(last_value))
     }
 
-    fn eval(&mut self, node: &AST) -> Result<EvalOutcome, String> {
+    fn eval(&mut self, node: &AST) -> Result<EvalOutcome, FlavorError> {
         match node {
-            AST::Print(exprs) => {
+            AST::Print { expressions, .. } => {
                 let mut outputs = Vec::new();
-                for expr in exprs.iter() {
+                for expr in expressions.iter() {
                     match self.eval(expr)? {
                         EvalOutcome::Value(val) => outputs.push(val.to_string()),
                         control_flow => {
@@ -119,7 +120,7 @@ impl Interpreter {
                 println!("{}", outputs.join(""));
                 Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
-            AST::Body { nodes } => {
+            AST::Body { nodes, .. } => {
                 let mut result = EvaluationType::Unit;
                 for n in nodes {
                     match self.eval(n)? {
@@ -133,6 +134,7 @@ impl Interpreter {
                 guard,
                 then_body,
                 else_body,
+                ..
             } => {
                 let guard_value = match self.eval(guard)? {
                     EvalOutcome::Value(val) => val,
@@ -147,7 +149,7 @@ impl Interpreter {
                     Ok(EvalOutcome::Value(EvaluationType::Unit))
                 }
             }
-            AST::While { guard, body } => {
+            AST::While { guard, body, .. } => {
                 let mut result = EvaluationType::Unit;
                 loop {
                     let guard_value = match self.eval(guard)? {
@@ -166,7 +168,11 @@ impl Interpreter {
                         },
                         EvaluationType::Bool(false) => break,
                         _ => {
-                            return Err("While guard must be evaluated to boolean".to_string());
+                            return Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                "While guard must be evaluated to boolean",
+                                *guard.span(),
+                            ));
                         }
                     }
                 }
@@ -176,6 +182,7 @@ impl Interpreter {
                 identifier,
                 var_type,
                 expr,
+                span,
             } => {
                 let value = match self.eval(expr)? {
                     EvalOutcome::Value(value) => value,
@@ -183,11 +190,15 @@ impl Interpreter {
                 };
                 if let Some(var_type) = var_type {
                     if !value.matches_type(var_type) {
-                        return Err(format!(
-                            "Type mismatch: variable '{}' declared as {:?} but value has runtime type {}",
-                            identifier,
-                            var_type,
-                            value.type_name()
+                        return Err(FlavorError::with_span(
+                            ErrorPhase::Runtime,
+                            format!(
+                                "Type mismatch: variable '{}' declared as {:?} but value has runtime type {}",
+                                identifier,
+                                var_type,
+                                value.type_name()
+                            ),
+                            *span,
                         ));
                     }
                 }
@@ -203,6 +214,7 @@ impl Interpreter {
                 parameters,
                 return_type: _,
                 body,
+                ..
             } => {
                 let closure_env = Rc::new(RefCell::new(self.env.clone()));
                 let func = EvaluationType::Function {
@@ -214,12 +226,16 @@ impl Interpreter {
                 self.env.insert(name.clone(), func);
                 Ok(EvalOutcome::Value(EvaluationType::Unit))
             }
-            AST::Return(expr) => match self.eval(expr)? {
+            AST::Return { expr, .. } => match self.eval(expr)? {
                 EvalOutcome::Value(value) => Ok(EvalOutcome::Return(value)),
                 contorl_flow => Ok(contorl_flow),
             },
-            AST::Break => Ok(EvalOutcome::Break),
-            AST::FunctionCall { callee, arguments } => {
+            AST::Break { span } => Ok(EvalOutcome::Break),
+            AST::FunctionCall {
+                callee,
+                arguments,
+                span,
+            } => {
                 // TODO: rework error handling
                 let (parameters, body, captured_env) = match self.eval(callee)? {
                     EvalOutcome::Value(EvaluationType::Function {
@@ -227,12 +243,26 @@ impl Interpreter {
                         body,
                         env,
                     }) => (parameters, body, env),
-                    EvalOutcome::Value(_) => return Err("Callee is not a function".to_string()),
+                    EvalOutcome::Value(_) => {
+                        return Err(FlavorError::with_span(
+                            ErrorPhase::Runtime,
+                            "Callee is not a function",
+                            *callee.span(),
+                        ));
+                    }
                     control_flow => return Ok(control_flow),
                 };
 
                 if parameters.len() != arguments.len() {
-                    return Err("Argument count mismatch".to_string());
+                    return Err(FlavorError::with_span(
+                        ErrorPhase::Runtime,
+                        format!(
+                            "Expected {} arguments but got {}",
+                            parameters.len(),
+                            arguments.len()
+                        ),
+                        *span,
+                    ));
                 }
 
                 let mut local_env = captured_env.borrow().clone();
@@ -252,13 +282,15 @@ impl Interpreter {
                 match result? {
                     EvalOutcome::Return(value) => Ok(EvalOutcome::Value(value)),
                     EvalOutcome::Value(value) => Ok(EvalOutcome::Value(value)),
-                    EvalOutcome::Break => Err("Break outside of a loop".to_string()),
+                    EvalOutcome::Break => Err(FlavorError::with_span(
+                        ErrorPhase::Runtime,
+                        "Unexpected 'break' outside of loop",
+                        *span,
+                    )),
                 }
             }
             AST::FunctionExpression {
-                parameters,
-                return_type: _,
-                body,
+                parameters, body, ..
             } => {
                 let closure_env = Rc::new(RefCell::new(self.env.clone()));
                 let func = EvaluationType::Function {
@@ -268,23 +300,35 @@ impl Interpreter {
                 };
                 Ok(EvalOutcome::Value(func))
             }
-            AST::UnitLiteral => Ok(EvalOutcome::Value(EvaluationType::Unit)),
-            AST::NumberLiteral(value) => Ok(EvalOutcome::Value(EvaluationType::Int(
-                value.parse().unwrap(),
-            ))),
-            AST::StringLiteral(value) => {
+            AST::UnitLiteral { .. } => Ok(EvalOutcome::Value(EvaluationType::Unit)),
+            AST::NumberLiteral { value, span } => {
+                let parsed = value.parse::<i64>().map_err(|_| {
+                    FlavorError::with_span(ErrorPhase::Runtime, "Invalid integer literal", *span)
+                })?;
+                Ok(EvalOutcome::Value(EvaluationType::Int(parsed)))
+            }
+            AST::StringLiteral { value, .. } => {
                 Ok(EvalOutcome::Value(EvaluationType::String(value.clone())))
             }
-            AST::BoolLiteral(value) => Ok(EvalOutcome::Value(EvaluationType::Bool(
-                value.parse().unwrap(),
-            ))),
-            AST::Identifier(name) => self
+            AST::BoolLiteral { value, span } => {
+                let parsed = value.parse::<bool>().map_err(|_| {
+                    FlavorError::with_span(ErrorPhase::Runtime, "Invalid boolean literal", *span)
+                })?;
+                Ok(EvalOutcome::Value(EvaluationType::Bool(parsed)))
+            }
+            AST::Identifier { name, span } => self
                 .env
                 .get(name)
                 .cloned()
                 .map(EvalOutcome::Value)
-                .ok_or_else(|| format!("Undefined variable: {name}")),
-            AST::ArrayLiteral(elements) => {
+                .ok_or_else(|| {
+                    FlavorError::with_span(
+                        ErrorPhase::Runtime,
+                        format!("Undefined variable: {name}"),
+                        *span,
+                    )
+                }),
+            AST::ArrayLiteral { elements, .. } => {
                 let mut values = Vec::with_capacity(elements.len());
                 for elem in elements {
                     match self.eval(elem)? {
@@ -294,7 +338,7 @@ impl Interpreter {
                 }
                 Ok(EvalOutcome::Value(EvaluationType::Array(values)))
             }
-            AST::ArrayAccess { array, index } => {
+            AST::ArrayAccess { array, index, span } => {
                 let array_value = match self.eval(array)? {
                     EvalOutcome::Value(value) => value,
                     control_flow => return Ok(control_flow),
@@ -306,20 +350,35 @@ impl Interpreter {
                 match (array_value, index_value) {
                     (EvaluationType::Array(arr), EvaluationType::Int(idx)) => {
                         if idx < 0 {
-                            return Err("Negative array index".to_string());
+                            return Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                "Negative array index",
+                                *span,
+                            ));
                         }
                         arr.get(idx as usize)
                             .cloned()
                             .map(EvalOutcome::Value)
-                            .ok_or_else(|| "Index out of bounds".to_string())
+                            .ok_or_else(|| {
+                                FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Array index out of bounds",
+                                    *span,
+                                )
+                            })
                     }
-                    _ => Err("Invalid array access".to_string()),
+                    _ => Err(FlavorError::with_span(
+                        ErrorPhase::Runtime,
+                        "Invalid array access",
+                        *span,
+                    )),
                 }
             }
             AST::BinaryExpression {
                 left,
                 operator,
                 right,
+                span,
             } => {
                 let left_value = match self.eval(left)? {
                     EvalOutcome::Value(value) => value,
@@ -332,62 +391,89 @@ impl Interpreter {
 
                 match (left_value, right_value, operator.as_str()) {
                     // Assignment
-                    (_lt, rt, "=") => {
-                        match &**left {
-                            AST::Identifier(name) => {
-                                self.env.insert(name.clone(), rt.clone());
-                                Ok(EvalOutcome::Value(rt))
+                    (_lt, rt, "=") => match &**left {
+                        AST::Identifier { name, .. } => {
+                            if self.env.get(name).is_none() {
+                                return Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    format!("Undefined variable: {name}"),
+                                    *left.span(),
+                                ));
                             }
-                            AST::ArrayAccess { array, index } => {
-                                let array_name = if let AST::Identifier(name) = &**array {
-                                    name
-                                } else {
-                                    return Err("Left side of assignment must be an identifier or array access".to_string());
-                                };
-
-                                let index_value = match self.eval(index)? {
-                                    EvalOutcome::Value(value) => value,
-                                    control_flow => return Ok(control_flow),
-                                };
-                                let index_int = if let EvaluationType::Int(i) = index_value {
-                                    i
-                                } else {
-                                    return Err("Array index must be an integer".to_string());
-                                };
-
-                                if index_int < 0 {
-                                    return Err("Negative array index".to_string());
-                                }
-
-                                let mut array_values = self
-                                    .env
-                                    .get(array_name)
-                                    .ok_or_else(|| format!("Undefined variable: {array_name}"))?
-                                    .clone();
-
-                                match &mut array_values {
-                                    EvaluationType::Array(arr) => {
-                                        let idx = index_int as usize;
-                                        if idx >= arr.len() {
-                                            // TODO: For now arrays are fixed-size at runtime; reject implicit resizing.
-                                            let len = arr.len();
-                                            return Err(format!(
-                                                "Index {idx} out of bounds for array '{array_name}' of length {len}"
-                                            ));
-                                        }
-                                        arr[idx] = rt.clone();
-                                        self.env.insert(array_name.clone(), array_values);
-                                        Ok(EvalOutcome::Value(rt))
-                                    }
-                                    _ => Err(format!("{array_name} is not an array")),
-                                }
-                            }
-                            _ => Err(
-                                "Left side of assignment must be an identifier or array access"
-                                    .to_string(),
-                            ),
+                            self.env.insert(name.clone(), rt.clone());
+                            Ok(EvalOutcome::Value(rt))
                         }
-                    }
+                        AST::ArrayAccess { array, index, .. } => {
+                            let array_name = if let AST::Identifier { name, .. } = &**array {
+                                name
+                            } else {
+                                return Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Left side of assignment must be an identifier or array access",
+                                    *array.span(),
+                                ));
+                            };
+
+                            let index_value = match self.eval(index)? {
+                                EvalOutcome::Value(value) => value,
+                                control_flow => return Ok(control_flow),
+                            };
+                            let index_int = if let EvaluationType::Int(i) = index_value {
+                                i
+                            } else {
+                                return Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Array index must be an integer",
+                                    *index.span(),
+                                ));
+                            };
+
+                            if index_int < 0 {
+                                return Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Negative array index",
+                                    *index.span(),
+                                ));
+                            }
+                            let array_values = self.env.get_mut(array_name).ok_or_else(|| {
+                                FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    format!("Undefined variable: {array_name}"),
+                                    *array.span(),
+                                )
+                            })?;
+
+                            match array_values {
+                                EvaluationType::Array(arr) => {
+                                    let idx = index_int as usize;
+                                    if idx >= arr.len() {
+                                        let len = arr.len();
+                                        return Err(FlavorError::with_span(
+                                            ErrorPhase::Runtime,
+                                            format!(
+                                                "Index {idx} out of bounds for array '{array_name}' of length {len}"
+                                            ),
+                                            *index.span(),
+                                        ));
+                                    }
+                                    arr[idx] = rt.clone();
+                                    Ok(EvalOutcome::Value(rt))
+                                }
+                                _ => {
+                                    return Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        format!("Variable '{array_name}' is not an array"),
+                                        *array.span(),
+                                    ));
+                                }
+                            }
+                        }
+                        _ => Err(FlavorError::with_span(
+                            ErrorPhase::Runtime,
+                            "Left side of assignment must be an identifier or array access",
+                            *left.span(),
+                        )),
+                    },
                     // Integer arithmetic
                     (EvaluationType::Int(l), EvaluationType::Int(r), "+") => {
                         Ok(EvalOutcome::Value(EvaluationType::Int(l + r)))
@@ -400,14 +486,22 @@ impl Interpreter {
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "/") => {
                         if r == 0 {
-                            Err("Division by zero".to_string())
+                            Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                "Division by zero",
+                                *span,
+                            ))
                         } else {
                             Ok(EvalOutcome::Value(EvaluationType::Int(l / r)))
                         }
                     }
                     (EvaluationType::Int(l), EvaluationType::Int(r), "%") => {
                         if r == 0 {
-                            Err("Modulo by zero".to_string())
+                            Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                "Modulo by zero",
+                                *span,
+                            ))
                         } else {
                             Ok(EvalOutcome::Value(EvaluationType::Int(l % r)))
                         }
@@ -446,33 +540,29 @@ impl Interpreter {
                     (EvaluationType::Bool(l), EvaluationType::Bool(r), "!=") => {
                         Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
                     }
-
-                    // String concatenation
-                    // (EvaluationType::String(l), EvaluationType::String(r), "+") => {
-                    //     Ok(EvaluationType::String(l + &r))
-                    // }
-                    // (EvaluationType::String(l), EvaluationType::String(r), "==") => {
-                    //     Ok(EvaluationType::Bool(l == r))
-                    // }
-                    // (EvaluationType::String(l), EvaluationType::String(r), "!=") => {
-                    //     Ok(EvaluationType::Bool(l != r))
-                    // }
-
-                    // Fallback
-                    (l, r, op) => Err(format!("Unsupported binary operation: {l:?} {op} {r:?}",)),
+                    (l, r, op) => Err(FlavorError::with_span(
+                        ErrorPhase::Runtime,
+                        format!("Unsupported binary operation: {l:?} {op} {r:?}",),
+                        *span,
+                    )),
                 }
             }
             AST::UnaryExpression {
                 operator,
                 operand,
                 is_postfix,
+                span,
             } => match operator.as_str() {
                 "-" if !is_postfix => match self.eval(operand)? {
                     EvalOutcome::Value(EvaluationType::Int(value)) => {
                         Ok(EvalOutcome::Value(EvaluationType::Int(-value)))
                     }
-                    EvalOutcome::Value(value) => Err(format!(
-                        "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {value:?}",
+                    EvalOutcome::Value(value) => Err(FlavorError::with_span(
+                        ErrorPhase::Runtime,
+                        format!(
+                            "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {value:?}",
+                        ),
+                        *operand.span(),
                     )),
                     control_flow => Ok(control_flow),
                 },
@@ -480,8 +570,12 @@ impl Interpreter {
                     EvalOutcome::Value(EvaluationType::Bool(value)) => {
                         Ok(EvalOutcome::Value(EvaluationType::Bool(!value)))
                     }
-                    EvalOutcome::Value(value) => Err(format!(
-                        "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {value:?}",
+                    EvalOutcome::Value(value) => Err(FlavorError::with_span(
+                        ErrorPhase::Runtime,
+                        format!(
+                            "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {value:?}",
+                        ),
+                        *operand.span(),
                     )),
                     control_flow => Ok(control_flow),
                 },
@@ -489,18 +583,24 @@ impl Interpreter {
                     let delta: i64 = if operator == "++" { 1 } else { -1 };
 
                     match &**operand {
-                        AST::Identifier(name) => {
-                            let current_value = self
-                                .env
-                                .get(name)
-                                .cloned()
-                                .ok_or_else(|| format!("Undefined variable: {name}"))?;
+                        AST::Identifier { name, .. } => {
+                            let current_value = self.env.get(name).cloned().ok_or_else(|| {
+                                FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    format!("Undefined variable: {name}"),
+                                    *operand.span(),
+                                )
+                            })?;
 
                             let old_int = match current_value {
                                 EvaluationType::Int(value) => value,
                                 other => {
-                                    return Err(format!(
-                                        "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
+                                    return Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        format!(
+                                            "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
+                                        ),
+                                        *operand.span(),
                                     ));
                                 }
                             };
@@ -517,14 +617,15 @@ impl Interpreter {
                                 Ok(EvalOutcome::Value(new_value))
                             }
                         }
-                        AST::ArrayAccess { array, index } => {
-                            let array_name = if let AST::Identifier(name) = &**array {
+                        AST::ArrayAccess { array, index, .. } => {
+                            let array_name = if let AST::Identifier { name, .. } = &**array {
                                 name
                             } else {
-                                return Err(
-                                    "Left side of increment must be an identifier or array access"
-                                        .to_string(),
-                                );
+                                return Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Left side of increment must be an identifier or array access",
+                                    *array.span(),
+                                ));
                             };
 
                             let index_value = match self.eval(index)? {
@@ -534,24 +635,38 @@ impl Interpreter {
                             let index_int = if let EvaluationType::Int(i) = index_value {
                                 i
                             } else {
-                                return Err("Array index must be an integer".to_string());
+                                return Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Array index must be an integer",
+                                    *index.span(),
+                                ));
                             };
 
                             if index_int < 0 {
-                                return Err("Negative array index".to_string());
+                                return Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Negative array index",
+                                    *index.span(),
+                                ));
                             }
 
-                            let mut array_values = self
-                                .env
-                                .get(array_name)
-                                .ok_or_else(|| format!("Undefined variable: {array_name}"))?
-                                .clone();
+                            let array_values = self.env.get_mut(array_name).ok_or_else(|| {
+                                FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    format!("Undefined variable: {array_name}"),
+                                    *array.span(),
+                                )
+                            })?;
 
-                            let (old_int, new_int) = match &mut array_values {
+                            let (old_int, new_int) = match array_values {
                                 EvaluationType::Array(arr) => {
                                     let idx = index_int as usize;
                                     if idx >= arr.len() {
-                                        return Err("Index out of bounds".to_string());
+                                        return Err(FlavorError::with_span(
+                                            ErrorPhase::Runtime,
+                                            "Array index out of bounds",
+                                            *index.span(),
+                                        ));
                                     }
 
                                     match arr.get_mut(idx) {
@@ -561,17 +676,25 @@ impl Interpreter {
                                             (old_value, *element)
                                         }
                                         Some(other) => {
-                                            return Err(format!(
-                                                "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
+                                            return Err(FlavorError::with_span(
+                                                ErrorPhase::Runtime,
+                                                format!(
+                                                    "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
+                                                ),
+                                                *index.span(),
                                             ));
                                         }
                                         None => unreachable!(),
                                     }
                                 }
-                                _ => return Err(format!("{array_name} is not an array")),
+                                _ => {
+                                    return Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        format!("{array_name} is not an array"),
+                                        *array.span(),
+                                    ));
+                                }
                             };
-
-                            self.env.insert(array_name.clone(), array_values);
 
                             let old_value = EvaluationType::Int(old_int);
                             let new_value = EvaluationType::Int(new_int);
@@ -582,20 +705,25 @@ impl Interpreter {
                                 Ok(EvalOutcome::Value(new_value))
                             }
                         }
-                        _ => Err(
-                            "Operand must be an identifier or array access for increment/decrement"
-                                .to_string(),
-                        ),
+                        _ => Err(FlavorError::with_span(
+                            ErrorPhase::Runtime,
+                            "Operand must be an identifier or array access for increment/decrement",
+                            *operand.span(),
+                        )),
                     }
                 }
                 _ => match self.eval(operand)? {
-                    EvalOutcome::Value(operand_value) => Err(format!(
-                        "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {operand_value:?}",
+                    EvalOutcome::Value(operand_value) => Err(FlavorError::with_span(
+                        ErrorPhase::Runtime,
+                        format!(
+                            "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {operand_value:?}",
+                        ),
+                        *span,
                     )),
                     control_flow => Ok(control_flow),
                 },
             },
-            AST::ExpressionStatement(expr) => self.eval(expr),
+            AST::ExpressionStatement { expr, .. } => self.eval(expr),
         }
     }
 }
