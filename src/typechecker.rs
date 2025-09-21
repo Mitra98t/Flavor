@@ -699,7 +699,7 @@ impl TypeChecker {
         }
     }
 
-    fn ensure_assignable<'a>(&mut self, node: &'a ASTNode) -> Result<(), FlavorError> {
+    fn ensure_assignable(&mut self, node: &ASTNode) -> Result<(), FlavorError> {
         match node {
             ASTNode::Identifier { .. } => Ok(()),
             ASTNode::ArrayAccess { array, .. } => self.ensure_assignable(array),
