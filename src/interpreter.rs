@@ -471,27 +471,22 @@ impl Interpreter {
                 right,
                 span,
             } => {
-                let left_value = match self.eval(left)? {
-                    EvalOutcome::Value(value) => value,
-                    control_flow => return Ok(control_flow),
-                };
-                let right_value = match self.eval(right)? {
-                    EvalOutcome::Value(value) => value,
-                    control_flow => return Ok(control_flow),
-                };
+                if operator == "=" {
+                    let right_value = match self.eval(right)? {
+                        EvalOutcome::Value(value) => value,
+                        control_flow => return Ok(control_flow),
+                    };
 
-                match (left_value, right_value, operator.as_str()) {
-                    // Assignment
-                    (_lt, rt, "=") => match &**left {
+                    match &**left {
                         AST::Identifier { name, .. } => {
-                            if !self.assign_existing(name, rt.clone()) {
+                            if !self.assign_existing(name, right_value.clone()) {
                                 return Err(FlavorError::with_span(
                                     ErrorPhase::Runtime,
                                     format!("Undefined variable: {name}"),
                                     *left.span(),
                                 ));
                             }
-                            Ok(EvalOutcome::Value(rt))
+                            Ok(EvalOutcome::Value(right_value))
                         }
                         AST::ArrayAccess { .. } => {
                             let mut index_nodes = Vec::new();
@@ -582,8 +577,8 @@ impl Interpreter {
                                             ));
                                         }
                                         if depth == last_index {
-                                            arr[idx] = rt.clone();
-                                            return Ok(EvalOutcome::Value(rt));
+                                            arr[idx] = right_value.clone();
+                                            return Ok(EvalOutcome::Value(right_value));
                                         }
                                         target = &mut arr[idx];
                                     }
@@ -605,152 +600,95 @@ impl Interpreter {
 
                             unreachable!("Array assignment without indices");
                         }
-                        // AST::ArrayAccess { array, index, .. } => {
-                        //     let array_name = if let AST::Identifier { name, .. } = &**array {
-                        //         name
-                        //     } else {
-                        //         return Err(FlavorError::with_span(
-                        //             ErrorPhase::Runtime,
-                        //             "Left side of assignment must be an identifier or array access",
-                        //             *array.span(),
-                        //         ));
-                        //     };
-                        //
-                        //     let index_value = match self.eval(index)? {
-                        //         EvalOutcome::Value(value) => value,
-                        //         control_flow => return Ok(control_flow),
-                        //     };
-                        //     let index_int = if let EvaluationType::Int(i) = index_value {
-                        //         i
-                        //     } else {
-                        //         return Err(FlavorError::with_span(
-                        //             ErrorPhase::Runtime,
-                        //             "Array index must be an integer",
-                        //             *index.span(),
-                        //         ));
-                        //     };
-                        //
-                        //     if index_int < 0 {
-                        //         return Err(FlavorError::with_span(
-                        //             ErrorPhase::Runtime,
-                        //             "Negative array index",
-                        //             *index.span(),
-                        //         ));
-                        //     }
-                        //     let target_env = self.find_env_for(array_name).ok_or_else(|| {
-                        //         FlavorError::with_span(
-                        //             ErrorPhase::Runtime,
-                        //             format!("Undefined variable: {array_name}"),
-                        //             *array.span(),
-                        //         )
-                        //     })?;
-                        //
-                        //     let mut env_ref = target_env.borrow_mut();
-                        //     match env_ref.values.get_mut(array_name) {
-                        //         Some(EvaluationType::Array(arr)) => {
-                        //             let idx = index_int as usize;
-                        //             if idx >= arr.len() {
-                        //                 let len = arr.len();
-                        //                 return Err(FlavorError::with_span(
-                        //                     ErrorPhase::Runtime,
-                        //                     format!(
-                        //                         "Index {idx} out of bounds for array '{array_name}' of length {len}"
-                        //                     ),
-                        //                     *index.span(),
-                        //                 ));
-                        //             }
-                        //             arr[idx] = rt.clone();
-                        //             Ok(EvalOutcome::Value(rt))
-                        //         }
-                        //         Some(_) => Err(FlavorError::with_span(
-                        //             ErrorPhase::Runtime,
-                        //             format!("Variable '{array_name}' is not an array"),
-                        //             *array.span(),
-                        //         )),
-                        //         None => Err(FlavorError::with_span(
-                        //             ErrorPhase::Runtime,
-                        //             format!("Undefined variable: {array_name}"),
-                        //             *array.span(),
-                        //         )),
-                        //     }
-                        // }
                         _ => Err(FlavorError::with_span(
                             ErrorPhase::Runtime,
                             "Left side of assignment must be an identifier or array access",
                             *left.span(),
                         )),
-                    },
-                    // Integer arithmetic
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "+") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Int(l + r)))
                     }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "-") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Int(l - r)))
-                    }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "*") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Int(l * r)))
-                    }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "/") => {
-                        if r == 0 {
-                            Err(FlavorError::with_span(
-                                ErrorPhase::Runtime,
-                                "Division by zero",
-                                *span,
-                            ))
-                        } else {
-                            Ok(EvalOutcome::Value(EvaluationType::Int(l / r)))
-                        }
-                    }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "%") => {
-                        if r == 0 {
-                            Err(FlavorError::with_span(
-                                ErrorPhase::Runtime,
-                                "Modulo by zero",
-                                *span,
-                            ))
-                        } else {
-                            Ok(EvalOutcome::Value(EvaluationType::Int(l % r)))
-                        }
-                    }
+                } else {
+                    let left_value = match self.eval(left)? {
+                        EvalOutcome::Value(value) => value,
+                        control_flow => return Ok(control_flow),
+                    };
+                    let right_value = match self.eval(right)? {
+                        EvalOutcome::Value(value) => value,
+                        control_flow => return Ok(control_flow),
+                    };
 
-                    // Integer comparisons
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "==") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
-                    }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "!=") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
-                    }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "<") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l < r)))
-                    }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), "<=") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l <= r)))
-                    }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), ">") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l > r)))
-                    }
-                    (EvaluationType::Int(l), EvaluationType::Int(r), ">=") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l >= r)))
-                    }
+                    match (left_value, right_value, operator.as_str()) {
+                        // Integer arithmetic
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "+") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Int(l + r)))
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "-") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Int(l - r)))
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "*") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Int(l * r)))
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "/") => {
+                            if r == 0 {
+                                Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Division by zero",
+                                    *span,
+                                ))
+                            } else {
+                                Ok(EvalOutcome::Value(EvaluationType::Int(l / r)))
+                            }
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "%") => {
+                            if r == 0 {
+                                Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    "Modulo by zero",
+                                    *span,
+                                ))
+                            } else {
+                                Ok(EvalOutcome::Value(EvaluationType::Int(l % r)))
+                            }
+                        }
 
-                    // Boolean logic
-                    (EvaluationType::Bool(l), EvaluationType::Bool(r), "&&") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l && r)))
+                        // Integer comparisons
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "==") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "!=") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "<") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l < r)))
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), "<=") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l <= r)))
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), ">") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l > r)))
+                        }
+                        (EvaluationType::Int(l), EvaluationType::Int(r), ">=") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l >= r)))
+                        }
+
+                        // Boolean logic
+                        (EvaluationType::Bool(l), EvaluationType::Bool(r), "&&") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l && r)))
+                        }
+                        (EvaluationType::Bool(l), EvaluationType::Bool(r), "||") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l || r)))
+                        }
+                        (EvaluationType::Bool(l), EvaluationType::Bool(r), "==") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
+                        }
+                        (EvaluationType::Bool(l), EvaluationType::Bool(r), "!=") => {
+                            Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
+                        }
+                        (l, r, op) => Err(FlavorError::with_span(
+                            ErrorPhase::Runtime,
+                            format!("Unsupported binary operation: {l:?} {op} {r:?}",),
+                            *span,
+                        )),
                     }
-                    (EvaluationType::Bool(l), EvaluationType::Bool(r), "||") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l || r)))
-                    }
-                    (EvaluationType::Bool(l), EvaluationType::Bool(r), "==") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
-                    }
-                    (EvaluationType::Bool(l), EvaluationType::Bool(r), "!=") => {
-                        Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
-                    }
-                    (l, r, op) => Err(FlavorError::with_span(
-                        ErrorPhase::Runtime,
-                        format!("Unsupported binary operation: {l:?} {op} {r:?}",),
-                        *span,
-                    )),
                 }
             }
             AST::UnaryExpression {

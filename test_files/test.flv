@@ -1,11 +1,8 @@
-fn foo () -> () ->int {
-  let count = 0;
-  return fn() -> int {
-    return ++count;
-  };
-}
+let x = [0,0,0];
+let i = 0;
 
-let counter = foo();
-print counter();
-print counter();
-print counter();
+x[i++] = 9;
+x[i] = 1;
+
+print x[0]," ", x[1]," ", x[2];
+

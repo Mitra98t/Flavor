@@ -612,6 +612,7 @@ impl TypeChecker {
 
                 match operator.as_str() {
                     "=" => {
+                        self.ensure_assignable(left)?;
                         if left_ty != right_ty {
                             return Err(FlavorError::with_span(
                                 ErrorPhase::TypeChecking,
@@ -695,6 +696,18 @@ impl TypeChecker {
                     )),
                 }
             }
+        }
+    }
+
+    fn ensure_assignable<'a>(&mut self, node: &'a ASTNode) -> Result<(), FlavorError> {
+        match node {
+            ASTNode::Identifier { .. } => Ok(()),
+            ASTNode::ArrayAccess { array, .. } => self.ensure_assignable(array),
+            other => Err(FlavorError::with_span(
+                ErrorPhase::TypeChecking,
+                "Left side of assignment must be a variable or array element",
+                *other.span(),
+            )),
         }
     }
 }
