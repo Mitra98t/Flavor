@@ -1,2 +1,12 @@
-let x = 0;
-x++;
+let i = 10;
+
+while i > 0 {
+  i --;
+  if i <= 5 {
+    break;
+  }
+}
+
+print "out";
+break;
+

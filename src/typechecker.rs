@@ -7,6 +7,7 @@ pub struct TypeChecker {
     scopes: Vec<HashMap<String, Type>>,
     current_expected_return: Option<Type>,
     current_expected_type: Option<Type>,
+    loop_depth: usize,
 }
 
 impl TypeChecker {
@@ -15,7 +16,18 @@ impl TypeChecker {
             current_expected_return: None,
             current_expected_type: None,
             scopes: vec![HashMap::new()],
+            loop_depth: 0,
         }
+    }
+
+    fn within_loop<F, R>(&mut self, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        self.loop_depth += 1;
+        let result = f(self);
+        self.loop_depth -= 1;
+        result
     }
 
     fn with_expected_type<F, R>(&mut self, expected: Option<Type>, f: F) -> R
@@ -460,11 +472,19 @@ impl TypeChecker {
                         *guard.span(),
                     ));
                 }
-                let (_body_ty, _body_returns) = self.check(body)?;
-                // loops may or may not return; conservatively assume no guaranteed return after while
+                self.within_loop(|tc| tc.check(body))?;
                 Ok((Type::Unit, false))
             }
-            ASTNode::Break { .. } => Ok((Type::Unit, false)),
+            ASTNode::Break { span } => {
+                if self.loop_depth == 0 {
+                    return Err(FlavorError::with_span(
+                        ErrorPhase::TypeChecking,
+                        "Break statement not within a loop",
+                        *span,
+                    ));
+                }
+                Ok((Type::Unit, true))
+            }
             ASTNode::FunctionCall {
                 callee,
                 arguments,
