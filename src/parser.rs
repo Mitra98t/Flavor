@@ -322,7 +322,7 @@ impl Parser {
     }
 
     fn parse_binary_expression(&mut self, min_prec: u8) -> ParseProduction {
-        let mut left = self.parse_postfix_expression()?;
+        let mut left = self.parse_unary_expression()?;
 
         while let Some(prec) = Self::get_precedence(self.current_tok()) {
             if prec < min_prec {
@@ -345,7 +345,7 @@ impl Parser {
     }
 
     fn parse_postfix_expression(&mut self) -> ParseProduction {
-        let mut expr = self.parse_unary_expression()?;
+        let mut expr = self.parse_primary()?;
 
         loop {
             match self.current_tok().tok_name {
@@ -414,7 +414,7 @@ impl Parser {
                 // Consume unary operator
                 self.consume_tok();
 
-                // dparse operand recursively as unary expression to support chaining
+                // Parse operand allowing postfix binding before the prefix
                 let operand = self.parse_unary_expression()?;
                 let span = tok.span.merge(operand.span());
                 Ok(ASTNode::UnaryExpression {
@@ -424,7 +424,7 @@ impl Parser {
                     span,
                 })
             }
-            _ => self.parse_primary(),
+            _ => self.parse_postfix_expression(),
         }
     }
 

@@ -580,136 +580,111 @@ impl Interpreter {
                 "++" | "--" => {
                     let delta: i64 = if operator == "++" { 1 } else { -1 };
 
-                    match &**operand {
-                        AST::Identifier { name, .. } => {
-                            let current_value = self.env.get(name).cloned().ok_or_else(|| {
-                                FlavorError::with_span(
+                    let mut index_nodes = Vec::new();
+                    let mut current = operand.as_ref();
+                    let (base_name, base_span) = loop {
+                        match current {
+                            AST::Identifier { name, span } => break (name.clone(), *span),
+                            AST::ArrayAccess { array, index, .. } => {
+                                index_nodes.push((index.as_ref(), *index.span(), *array.span()));
+                                current = array.as_ref();
+                            }
+                            _ => {
+                                return Err(FlavorError::with_span(
                                     ErrorPhase::Runtime,
-                                    format!("Undefined variable: {name}"),
-                                    *operand.span(),
-                                )
-                            })?;
-
-                            let old_int = match current_value {
-                                EvaluationType::Int(value) => value,
-                                other => {
-                                    return Err(FlavorError::with_span(
-                                        ErrorPhase::Runtime,
-                                        format!(
-                                            "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
-                                        ),
-                                        *operand.span(),
-                                    ));
-                                }
-                            };
-
-                            let new_int = old_int + delta;
-                            let new_value = EvaluationType::Int(new_int);
-                            let old_value = EvaluationType::Int(old_int);
-
-                            self.env.insert(name.clone(), new_value.clone());
-
-                            if *is_postfix {
-                                Ok(EvalOutcome::Value(old_value))
-                            } else {
-                                Ok(EvalOutcome::Value(new_value))
+                                    "Operand must be an identifier or array access for increment/decrement",
+                                    *current.span(),
+                                ));
                             }
                         }
-                        AST::ArrayAccess { array, index, .. } => {
-                            let array_name = if let AST::Identifier { name, .. } = &**array {
-                                name
-                            } else {
-                                return Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    "Left side of increment must be an identifier or array access",
-                                    *array.span(),
-                                ));
-                            };
+                    };
 
-                            let index_value = match self.eval(index)? {
-                                EvalOutcome::Value(value) => value,
-                                control_flow => return Ok(control_flow),
-                            };
-                            let index_int = if let EvaluationType::Int(i) = index_value {
-                                i
-                            } else {
-                                return Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    "Array index must be an integer",
-                                    *index.span(),
-                                ));
-                            };
-
-                            if index_int < 0 {
-                                return Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    "Negative array index",
-                                    *index.span(),
-                                ));
-                            }
-
-                            let array_values = self.env.get_mut(array_name).ok_or_else(|| {
-                                FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    format!("Undefined variable: {array_name}"),
-                                    *array.span(),
-                                )
-                            })?;
-
-                            let (old_int, new_int) = match array_values {
-                                EvaluationType::Array(arr) => {
-                                    let idx = index_int as usize;
-                                    if idx >= arr.len() {
-                                        return Err(FlavorError::with_span(
-                                            ErrorPhase::Runtime,
-                                            "Array index out of bounds",
-                                            *index.span(),
-                                        ));
-                                    }
-
-                                    match arr.get_mut(idx) {
-                                        Some(EvaluationType::Int(element)) => {
-                                            let old_value = *element;
-                                            *element += delta;
-                                            (old_value, *element)
-                                        }
-                                        Some(other) => {
-                                            return Err(FlavorError::with_span(
-                                                ErrorPhase::Runtime,
-                                                format!(
-                                                    "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
-                                                ),
-                                                *index.span(),
-                                            ));
-                                        }
-                                        None => unreachable!(),
-                                    }
-                                }
-                                _ => {
-                                    return Err(FlavorError::with_span(
-                                        ErrorPhase::Runtime,
-                                        format!("{array_name} is not an array"),
-                                        *array.span(),
-                                    ));
-                                }
-                            };
-
-                            let old_value = EvaluationType::Int(old_int);
-                            let new_value = EvaluationType::Int(new_int);
-
-                            if *is_postfix {
-                                Ok(EvalOutcome::Value(old_value))
-                            } else {
-                                Ok(EvalOutcome::Value(new_value))
-                            }
+                    let mut index_chain = Vec::with_capacity(index_nodes.len());
+                    for (index_ast, index_span, array_span) in index_nodes.iter().rev() {
+                        let index_value = match self.eval(index_ast)? {
+                            EvalOutcome::Value(value) => value,
+                            control_flow => return Ok(control_flow),
+                        };
+                        let idx_int = if let EvaluationType::Int(i) = index_value {
+                            i
+                        } else {
+                            return Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                "Array index must be an integer",
+                                *index_span,
+                            ));
+                        };
+                        if idx_int < 0 {
+                            return Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                "Negative array index",
+                                *index_span,
+                            ));
                         }
-                        _ => Err(FlavorError::with_span(
+                        index_chain.push((idx_int as usize, *index_span, *array_span));
+                    }
+
+                    let mut target = self.env.get_mut(&base_name).ok_or_else(|| {
+                        FlavorError::with_span(
                             ErrorPhase::Runtime,
-                            "Operand must be an identifier or array access for increment/decrement",
-                            *operand.span(),
-                        )),
+                            format!("Undefined variable: {base_name}"),
+                            base_span,
+                        )
+                    })?;
+
+                    for (depth, (idx, index_span, array_span)) in
+                        index_chain.into_iter().enumerate()
+                    {
+                        match target {
+                            EvaluationType::Array(arr) => {
+                                if idx >= arr.len() {
+                                    return Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        "Array index out of bounds",
+                                        index_span,
+                                    ));
+                                }
+                                target = &mut arr[idx];
+                            }
+                            _ => {
+                                let span = if depth == 0 { base_span } else { array_span };
+                                let message = if depth == 0 {
+                                    format!("{base_name} is not an array")
+                                } else {
+                                    "Value is not an array".to_string()
+                                };
+                                return Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    message,
+                                    span,
+                                ));
+                            }
+                        }
+                    }
+
+                    let (old_value, new_value) = match target {
+                        EvaluationType::Int(value) => {
+                            let old_int = *value;
+                            *value += delta;
+                            (EvaluationType::Int(old_int), EvaluationType::Int(*value))
+                        }
+                        other => {
+                            return Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!(
+                                    "Unsupported unary operation: {operator} (postfix: {is_postfix}) on {other:?}",
+                                ),
+                                *operand.span(),
+                            ));
+                        }
+                    };
+                    if *is_postfix {
+                        Ok(EvalOutcome::Value(old_value))
+                    } else {
+                        Ok(EvalOutcome::Value(new_value))
                     }
                 }
+
                 _ => match self.eval(operand)? {
                     EvalOutcome::Value(operand_value) => Err(FlavorError::with_span(
                         ErrorPhase::Runtime,

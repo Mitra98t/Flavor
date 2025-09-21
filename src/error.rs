@@ -76,8 +76,8 @@ impl FlavorError {
                 } else {
                     ""
                 };
-                let line_post_error = if span.end_column - 1 < line_text.len() {
-                    &line_text[(span.end_column - 1).min(line_text.len())..]
+                let line_post_error = if span.end_column < line_text.len() {
+                    &line_text[(span.end_column).min(line_text.len())..]
                 } else {
                     ""
                 };
