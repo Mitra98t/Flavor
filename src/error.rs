@@ -1,3 +1,6 @@
+use colored::*;
+use std::fmt::Display;
+
 use crate::types::Span;
 use std::cmp::max;
 
@@ -7,6 +10,17 @@ pub enum ErrorPhase {
     Parsing,
     TypeChecking,
     Runtime,
+}
+
+impl Display for ErrorPhase {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ErrorPhase::Lexing => write!(f, "Lexing"),
+            ErrorPhase::Parsing => write!(f, "Parsing"),
+            ErrorPhase::TypeChecking => write!(f, "TypeChecking"),
+            ErrorPhase::Runtime => write!(f, "Runtime"),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -30,6 +44,7 @@ impl FlavorError {
     }
 
     pub fn render(&self, source: &str) -> String {
+        let phase = format!("[{}]", self.phase);
         match &self.span {
             Some(span) => {
                 let line_index = span.start_line.saturating_sub(1);
@@ -56,18 +71,36 @@ impl FlavorError {
                     marker = "^".repeat(highlight_width)
                 );
 
+                let line_pre_error = if span.start_column >= 2 {
+                    &line_text[0..(span.start_column - 1).min(line_text.len())]
+                } else {
+                    ""
+                };
+                let line_post_error = if span.end_column - 1 < line_text.len() {
+                    &line_text[(span.end_column - 1).min(line_text.len())..]
+                } else {
+                    ""
+                };
+
                 format!(
-                    "[{:?}] {}\n--> {}:{}\n{:>4} | {}\n     | {}",
-                    self.phase,
-                    self.message,
+                    "\n\n{} {}\n--> {}:{}\n{:>4} | {}{}{}\n     | {}\n\n",
+                    phase.yellow().bold(),
+                    self.message.yellow(),
                     span.start_line,
                     span.start_column,
                     span.start_line,
-                    line_text,
-                    pointer_line
+                    line_pre_error,
+                    line_text
+                        .chars()
+                        .skip(pointer_offset)
+                        .take(highlight_width)
+                        .collect::<String>()
+                        .red(),
+                    line_post_error,
+                    pointer_line.red()
                 )
             }
-            None => format!("[{:?}] {}", self.phase, self.message),
+            None => format!("\n\n{} {}\n\n", phase.yellow().bold(), self.message),
         }
     }
 }

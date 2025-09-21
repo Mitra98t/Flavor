@@ -1,4 +1,7 @@
-use crate::types::{Span, Token, TokenName as TN};
+use crate::{
+    error::{ErrorPhase, FlavorError},
+    types::{Span, Token, TokenName as TN},
+};
 use regex::Regex;
 
 pub struct Lexer {
@@ -19,26 +22,27 @@ impl Lexer {
             column: 1,
         }
     }
-    pub fn lexe(&mut self) {
+    pub fn lexe(&mut self) -> Result<(), FlavorError> {
         loop {
-            let tok = self.next_token();
+            let tok = self.next_token()?;
 
             self.tokens.push(tok.clone());
             if tok.tok_name == TN::Eof {
                 break;
             }
         }
+        Ok(())
     }
 
-    fn next_token(&mut self) -> Token {
+    fn next_token(&mut self) -> Result<Token, FlavorError> {
         self.skip_whitespace();
 
         if self.pos >= self.source.len() {
-            return Token {
+            return Ok(Token {
                 tok_name: TN::Eof,
                 lexeme: "\0".to_string(),
                 span: Span::point(self.line, self.column),
-            };
+            });
         }
 
         let patterns = [
@@ -105,13 +109,22 @@ impl Lexer {
             }
         }
 
+        if token_name == TN::Unknown {
+            let span = self.advance_with(&lexeme);
+            return Err(FlavorError::with_span(
+                ErrorPhase::Lexing,
+                format!("Unknown token: {lexeme}"),
+                span,
+            ));
+        };
+
         let span = self.advance_with(&lexeme);
 
-        Token {
+        Ok(Token {
             tok_name: token_name,
             lexeme,
             span,
-        }
+        })
     }
 
     fn advance_with(&mut self, text: &str) -> Span {

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt::Formatter;
 
 use crate::error::{ErrorPhase, FlavorError};
 use crate::types::{ASTNode, Type};
@@ -119,7 +118,7 @@ impl TypeChecker {
 
                 Ok((Type::Array(Box::new(final_elem_type)), false))
             }
-            ASTNode::ArrayAccess { array, index, span } => {
+            ASTNode::ArrayAccess { array, index, .. } => {
                 let (array_ty, _array_ret) = self.check(array)?;
                 let (index_ty, _index_ret) = self.check(index)?;
 

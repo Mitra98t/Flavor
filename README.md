@@ -23,8 +23,13 @@ the challenges as they come up.
 
 ## Try Flavor!
 
-For now, the code is described as a string in the `main.rs` file.
 Simply run `cargo run` in the root of the repository to execute Flavor.
+
+The executable will ask for a source file, you can use the provided test files
+in the `./test_files/` directory as examples.
+Simply run `cargo run ./test_files/mega.flv` to execute the mega test file.
+
+You could also write your own `.flv` file and run it the same way.
 
 ## Code Style
 

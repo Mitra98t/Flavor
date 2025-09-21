@@ -33,7 +33,10 @@ fn main() {
     }
 
     let mut lexer = Lexer::new(&code);
-    lexer.lexe();
+    let lex_res = lexer.lexe();
+    if let Err(err) = lex_res {
+        report_and_exit(err, &code);
+    }
 
     if debug {
         println!("TOKENS\n");

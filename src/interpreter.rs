@@ -230,7 +230,7 @@ impl Interpreter {
                 EvalOutcome::Value(value) => Ok(EvalOutcome::Return(value)),
                 contorl_flow => Ok(contorl_flow),
             },
-            AST::Break { span } => Ok(EvalOutcome::Break),
+            AST::Break { .. } => Ok(EvalOutcome::Break),
             AST::FunctionCall {
                 callee,
                 arguments,
@@ -393,7 +393,7 @@ impl Interpreter {
                     // Assignment
                     (_lt, rt, "=") => match &**left {
                         AST::Identifier { name, .. } => {
-                            if self.env.get(name).is_none() {
+                            if !self.env.contains_key(name) {
                                 return Err(FlavorError::with_span(
                                     ErrorPhase::Runtime,
                                     format!("Undefined variable: {name}"),
@@ -459,13 +459,11 @@ impl Interpreter {
                                     arr[idx] = rt.clone();
                                     Ok(EvalOutcome::Value(rt))
                                 }
-                                _ => {
-                                    return Err(FlavorError::with_span(
-                                        ErrorPhase::Runtime,
-                                        format!("Variable '{array_name}' is not an array"),
-                                        *array.span(),
-                                    ));
-                                }
+                                _ => Err(FlavorError::with_span(
+                                    ErrorPhase::Runtime,
+                                    format!("Variable '{array_name}' is not an array"),
+                                    *array.span(),
+                                )),
                             }
                         }
                         _ => Err(FlavorError::with_span(

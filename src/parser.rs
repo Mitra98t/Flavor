@@ -155,11 +155,11 @@ impl Parser {
         let return_tok = self.expect_tok(TN::Return)?;
         let mut span = return_tok.span;
         let mut expr = Box::new(ASTNode::UnitLiteral {
-            span: return_tok.span.clone(),
+            span: return_tok.span,
         });
         if self.current_tok().tok_name != TN::Semicolon {
             expr = Box::new(self.parse_expression()?);
-            span = span.merge(&expr.span());
+            span = span.merge(expr.span());
         }
         let semicolon = self.expect_tok(TN::Semicolon)?;
         span = span.merge(&semicolon.span);
@@ -184,7 +184,7 @@ impl Parser {
             .merge(&params_span)
             .merge(&arrow_tok.span)
             .merge(&return_span)
-            .merge(&body.span());
+            .merge(body.span());
 
         Ok(ASTNode::FunctionDeclaration {
             name: fn_name.lexeme,
@@ -202,7 +202,7 @@ impl Parser {
         let mut span = lbra.span;
         while self.current_tok().tok_name != TN::RBra {
             let statement = self.parse_statement()?;
-            span = span.merge(&statement.span());
+            span = span.merge(statement.span());
             statements.push(statement);
         }
         let rbra = self.expect_tok(TN::RBra)?;
@@ -472,7 +472,7 @@ impl Parser {
                     .merge(&params_type)
                     .merge(&arrow_tok.span)
                     .merge(&return_span)
-                    .merge(&body.span());
+                    .merge(body.span());
                 Ok(ASTNode::FunctionExpression {
                     parameters,
                     return_type: return_ty,
