@@ -1,4 +1,4 @@
-#![allow(unused)]
+use std::fmt::Display;
 
 #[derive(Clone, PartialEq, Debug, Copy)]
 pub struct Span {
@@ -267,6 +267,140 @@ impl ASTNode {
             | ASTNode::BinaryExpression { span, .. }
             | ASTNode::UnaryExpression { span, .. }
             | ASTNode::ExpressionStatement { span, .. } => span,
+        }
+    }
+}
+
+impl Display for ASTNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ASTNode::Print { expressions, .. } => {
+                let exprs: Vec<String> = expressions.iter().map(|e| format!("{e}")).collect();
+                write!(f, "print {}", exprs.join(", "))
+            }
+            ASTNode::Body { nodes, .. } => {
+                let nodes_str: Vec<String> = nodes.iter().map(|n| format!("{n}")).collect();
+                write!(f, "{{\n{}\n}}", nodes_str.join("\n"))
+            }
+            ASTNode::If {
+                guard,
+                then_body,
+                else_body,
+                ..
+            } => {
+                if let Some(else_body) = else_body {
+                    write!(f, "if ({guard}) {then_body}\nelse {else_body}")
+                } else {
+                    write!(f, "if ({guard}) {then_body}")
+                }
+            }
+            ASTNode::While { guard, body, .. } => {
+                write!(f, "while ({guard}) {body}")
+            }
+            ASTNode::LetDeclaration {
+                identifier,
+                var_type,
+                expr,
+                ..
+            } => {
+                if let Some(var_type) = var_type {
+                    write!(f, "let {identifier}: {var_type:?} = {expr};")
+                } else {
+                    write!(f, "let {identifier} = {expr};")
+                }
+            }
+            ASTNode::FunctionDeclaration {
+                name,
+                parameters,
+                return_type,
+                body,
+                ..
+            } => {
+                let params: Vec<String> = parameters
+                    .iter()
+                    .map(|(n, t)| format!("{n}: {t:?}"))
+                    .collect();
+                write!(
+                    f,
+                    "fn {}({}) -> {:?} {}",
+                    name,
+                    params.join(", "),
+                    return_type,
+                    body
+                )
+            }
+            ASTNode::FunctionExpression {
+                parameters,
+                return_type,
+                body,
+                ..
+            } => {
+                let params: Vec<String> = parameters
+                    .iter()
+                    .map(|(n, t)| format!("{n}: {t:?}"))
+                    .collect();
+                write!(f, "fn({}) -> {:?} {}", params.join(", "), return_type, body)
+            }
+            ASTNode::Return { expr, .. } => {
+                write!(f, "return {expr};")
+            }
+            ASTNode::Break { .. } => {
+                write!(f, "break;")
+            }
+            ASTNode::FunctionCall {
+                callee, arguments, ..
+            } => {
+                let args: Vec<String> = arguments.iter().map(|a| format!("{a}")).collect();
+                write!(f, "{}({})", callee, args.join(", "))
+            }
+            ASTNode::UnitLiteral { .. } => {
+                write!(f, "()")
+            }
+            ASTNode::NumberLiteral { value, .. } => {
+                write!(f, "{value}")
+            }
+            ASTNode::FloatLiteral { value, .. } => {
+                write!(f, "{value}")
+            }
+            ASTNode::StringLiteral { value, .. } => {
+                write!(f, "{value}")
+            }
+            ASTNode::BoolLiteral { value, .. } => {
+                write!(f, "{value}")
+            }
+            ASTNode::Identifier { name, .. } => {
+                write!(f, "{name}")
+            }
+            ASTNode::ArrayLiteral { elements, .. } => {
+                let elems: Vec<String> = elements.iter().map(|e| format!("{e}")).collect();
+                write!(f, "[{}]", elems.join(", "))
+            }
+            ASTNode::ArrayAccess { array, index, .. } => {
+                write!(f, "{array}[{index}]")
+            }
+            ASTNode::BinaryExpression {
+                left,
+                operator,
+                right,
+                ..
+            } => {
+                write!(f, "({left} {operator} {right})")
+            }
+            ASTNode::UnaryExpression {
+                operator,
+                operand,
+                is_postfix,
+                ..
+            } => {
+                if *is_postfix {
+                    write!(f, "({operand}{operator})")
+                } else {
+                    write!(f, "({operator}{operand})")
+                }
+            }
+            ASTNode::ExpressionStatement { expr, .. } => {
+                write!(f, "{expr};")
+            }
         }
     }
 }

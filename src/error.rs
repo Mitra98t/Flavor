@@ -9,7 +9,6 @@ pub enum ErrorPhase {
     Lexing,
     Parsing,
     TypeChecking,
-    Runtime,
 }
 
 impl Display for ErrorPhase {
@@ -18,7 +17,6 @@ impl Display for ErrorPhase {
             ErrorPhase::Lexing => write!(f, "Lexing"),
             ErrorPhase::Parsing => write!(f, "Parsing"),
             ErrorPhase::TypeChecking => write!(f, "TypeChecking"),
-            ErrorPhase::Runtime => write!(f, "Runtime"),
         }
     }
 }
