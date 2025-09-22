@@ -442,6 +442,13 @@ impl Parser {
                     span: tok.span,
                 })
             }
+            TN::FloatLiteral => {
+                let tok = self.expect_tok(TN::FloatLiteral)?;
+                Ok(ASTNode::FloatLiteral {
+                    value: tok.lexeme,
+                    span: tok.span,
+                })
+            }
             TN::True | TN::False => {
                 let tok_name = tok.tok_name;
                 let tok = match tok_name {

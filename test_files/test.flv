@@ -1,12 +1,7 @@
-let i = 10;
+let x = 40.45;
+let foo = "hello ";
+let bar = foo + "world";
 
-while i > 0 {
-  i --;
-  if i <= 5 {
-    break;
-  }
-}
-
-print "out";
-break;
+print x+1.4;
+print bar;
 

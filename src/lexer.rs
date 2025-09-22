@@ -92,6 +92,7 @@ impl Lexer {
             (r"\]", TN::RSqu),
             (r"\{", TN::LBra),
             (r"\}", TN::RBra),
+            (r"\b\d+\.\d+\b", TN::FloatLiteral),
             (r"[0-9]+", TN::Number),
             (r#""(.*?)""#, TN::StringLiteral),
             (r"[a-zA-Z_][a-zA-Z0-9_]*", TN::Identifier),

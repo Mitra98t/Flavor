@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn lexer_recognizes_keywords_and_symbols() {
         let names = token_names(
-            "let score = 10; if score >= 5 && score < 20 { print score; } else { score = score - 1; }",
+            "let score = 10; if score >= 5 && score < 20 { print score; } else { score = score - 1; } let x = 40.574;",
         );
         assert_eq!(
             names,
@@ -170,6 +170,11 @@ mod tests {
                 TN::Number,
                 TN::Semicolon,
                 TN::RBra,
+                TN::Let,
+                TN::Identifier,
+                TN::Assign,
+                TN::FloatLiteral,
+                TN::Semicolon,
                 TN::Eof,
             ]
         );

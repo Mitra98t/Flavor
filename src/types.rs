@@ -114,6 +114,7 @@ pub enum TokenName {
 
     // Complex Elements
     Number,
+    FloatLiteral,
     StringLiteral,
     Identifier,
     True,
@@ -199,6 +200,10 @@ pub enum ASTNode {
         value: String,
         span: Span,
     },
+    FloatLiteral {
+        value: String,
+        span: Span,
+    },
     StringLiteral {
         value: String,
         span: Span,
@@ -253,6 +258,7 @@ impl ASTNode {
             | ASTNode::FunctionCall { span, .. }
             | ASTNode::UnitLiteral { span, .. }
             | ASTNode::NumberLiteral { span, .. }
+            | ASTNode::FloatLiteral { span, .. }
             | ASTNode::StringLiteral { span, .. }
             | ASTNode::BoolLiteral { span, .. }
             | ASTNode::Identifier { span, .. }

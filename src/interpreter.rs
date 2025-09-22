@@ -9,7 +9,7 @@ use crate::types::{ASTNode as AST, Type};
 #[derive(Debug, Clone)]
 pub(crate) enum EvaluationType {
     Int(i64),
-    // Float(f64),
+    Float(f64),
     Bool(bool),
     #[allow(dead_code)]
     String(String),
@@ -21,6 +21,8 @@ pub(crate) enum EvaluationType {
         env: Rc<RefCell<EnvFrame>>,
     },
 }
+
+type ET = EvaluationType;
 
 impl EvaluationType {
     fn matches_type(&self, expected: &Type) -> bool {
@@ -41,6 +43,7 @@ impl EvaluationType {
     fn type_name(&self) -> &'static str {
         match self {
             EvaluationType::Int(_) => "int",
+            EvaluationType::Float(_) => "float",
             EvaluationType::Bool(_) => "bool",
             EvaluationType::String(_) => "string",
             EvaluationType::Unit => "unit",
@@ -54,6 +57,7 @@ impl fmt::Display for EvaluationType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EvaluationType::Int(value) => write!(f, "{value}"),
+            EvaluationType::Float(value) => write!(f, "{value}"),
             EvaluationType::Bool(value) => write!(f, "{value}"),
             EvaluationType::String(value) => {
                 if let Some(stripped) = value.strip_prefix('"').and_then(|v| v.strip_suffix('"')) {
@@ -401,8 +405,22 @@ impl Interpreter {
                 })?;
                 Ok(EvalOutcome::Value(EvaluationType::Int(parsed)))
             }
+            AST::FloatLiteral { value, span } => {
+                let parsed = value.parse::<f64>().map_err(|_| {
+                    FlavorError::with_span(ErrorPhase::Runtime, "Invalid float literal", *span)
+                })?;
+                Ok(EvalOutcome::Value(EvaluationType::Float(parsed)))
+            }
             AST::StringLiteral { value, .. } => {
-                Ok(EvalOutcome::Value(EvaluationType::String(value.clone())))
+                // remove the surrounding quotes if present
+                let value = if let Some(stripped) =
+                    value.strip_prefix('"').and_then(|v| v.strip_suffix('"'))
+                {
+                    stripped.to_string()
+                } else {
+                    value.clone()
+                };
+                Ok(EvalOutcome::Value(EvaluationType::String(value)))
             }
             AST::BoolLiteral { value, span } => {
                 let parsed = value.parse::<bool>().map_err(|_| {
@@ -616,76 +634,205 @@ impl Interpreter {
                         control_flow => return Ok(control_flow),
                     };
 
-                    match (left_value, right_value, operator.as_str()) {
-                        // Integer arithmetic
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "+") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Int(l + r)))
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "-") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Int(l - r)))
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "*") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Int(l * r)))
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "/") => {
-                            if r == 0 {
-                                Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    "Division by zero",
-                                    *span,
-                                ))
-                            } else {
-                                Ok(EvalOutcome::Value(EvaluationType::Int(l / r)))
+                    match operator.as_str() {
+                        "+" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => Ok(EvalOutcome::Value(ET::Int(l + r))),
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(ET::Float(l + r)))
                             }
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "%") => {
-                            if r == 0 {
-                                Err(FlavorError::with_span(
-                                    ErrorPhase::Runtime,
-                                    "Modulo by zero",
-                                    *span,
-                                ))
-                            } else {
-                                Ok(EvalOutcome::Value(EvaluationType::Int(l % r)))
+                            (ET::String(l), ET::String(r)) => {
+                                Ok(EvalOutcome::Value(ET::String(format!("{l}{r}"))))
                             }
-                        }
-
-                        // Integer comparisons
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "==") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "!=") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "<") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l < r)))
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), "<=") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l <= r)))
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), ">") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l > r)))
-                        }
-                        (EvaluationType::Int(l), EvaluationType::Int(r), ">=") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l >= r)))
-                        }
-
-                        // Boolean logic
-                        (EvaluationType::Bool(l), EvaluationType::Bool(r), "&&") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l && r)))
-                        }
-                        (EvaluationType::Bool(l), EvaluationType::Bool(r), "||") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l || r)))
-                        }
-                        (EvaluationType::Bool(l), EvaluationType::Bool(r), "==") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
-                        }
-                        (EvaluationType::Bool(l), EvaluationType::Bool(r), "!=") => {
-                            Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
-                        }
-                        (l, r, op) => Err(FlavorError::with_span(
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} + {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "-" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => Ok(EvalOutcome::Value(ET::Int(l - r))),
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(ET::Float(l - r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} - {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "*" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => Ok(EvalOutcome::Value(ET::Int(l * r))),
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(ET::Float(l * r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} * {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "/" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => {
+                                if r == 0 {
+                                    Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        "Division by zero",
+                                        *span,
+                                    ))
+                                } else {
+                                    Ok(EvalOutcome::Value(ET::Int(l / r)))
+                                }
+                            }
+                            (ET::Float(l), ET::Float(r)) => {
+                                if r == 0.0 {
+                                    Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        "Division by zero",
+                                        *span,
+                                    ))
+                                } else {
+                                    Ok(EvalOutcome::Value(ET::Float(l / r)))
+                                }
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} / {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "%" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => {
+                                if r == 0 {
+                                    Err(FlavorError::with_span(
+                                        ErrorPhase::Runtime,
+                                        "Modulo by zero",
+                                        *span,
+                                    ))
+                                } else {
+                                    Ok(EvalOutcome::Value(ET::Int(l % r)))
+                                }
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} % {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "==" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
+                            }
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
+                            }
+                            (ET::Bool(l), ET::Bool(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
+                            }
+                            (ET::String(l), ET::String(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l == r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} == {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "!=" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
+                            }
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
+                            }
+                            (ET::Bool(l), ET::Bool(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
+                            }
+                            (ET::String(l), ET::String(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l != r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} != {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "<" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l < r)))
+                            }
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l < r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} < {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "<=" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l <= r)))
+                            }
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l <= r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} <= {r:?}",),
+                                *span,
+                            )),
+                        },
+                        ">" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l > r)))
+                            }
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l > r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} > {r:?}",),
+                                *span,
+                            )),
+                        },
+                        ">=" => match (left_value, right_value) {
+                            (ET::Int(l), ET::Int(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l >= r)))
+                            }
+                            (ET::Float(l), ET::Float(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l >= r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} >= {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "&&" => match (left_value, right_value) {
+                            (ET::Bool(l), ET::Bool(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l && r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} && {r:?}",),
+                                *span,
+                            )),
+                        },
+                        "||" => match (left_value, right_value) {
+                            (ET::Bool(l), ET::Bool(r)) => {
+                                Ok(EvalOutcome::Value(EvaluationType::Bool(l || r)))
+                            }
+                            (l, r) => Err(FlavorError::with_span(
+                                ErrorPhase::Runtime,
+                                format!("Unsupported binary operation: {l:?} || {r:?}",),
+                                *span,
+                            )),
+                        },
+                        op => Err(FlavorError::with_span(
                             ErrorPhase::Runtime,
-                            format!("Unsupported binary operation: {l:?} {op} {r:?}",),
+                            format!(
+                                "Unsupported binary operation: {left_value:?} {op} {right_value:?}",
+                            ),
                             *span,
                         )),
                     }
@@ -700,6 +847,9 @@ impl Interpreter {
                 "-" if !is_postfix => match self.eval(operand)? {
                     EvalOutcome::Value(EvaluationType::Int(value)) => {
                         Ok(EvalOutcome::Value(EvaluationType::Int(-value)))
+                    }
+                    EvalOutcome::Value(EvaluationType::Float(value)) => {
+                        Ok(EvalOutcome::Value(EvaluationType::Float(-value)))
                     }
                     EvalOutcome::Value(value) => Err(FlavorError::with_span(
                         ErrorPhase::Runtime,

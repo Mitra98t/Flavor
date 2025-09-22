@@ -537,6 +537,7 @@ impl TypeChecker {
             }
             ASTNode::UnitLiteral { .. } => Ok((Type::Unit, false)),
             ASTNode::NumberLiteral { .. } => Ok((Type::Int, false)),
+            ASTNode::FloatLiteral { .. } => Ok((Type::Float, false)),
             ASTNode::StringLiteral { .. } => Ok((Type::String, false)),
             ASTNode::BoolLiteral { .. } => Ok((Type::Bool, false)),
             ASTNode::Identifier { name, span } => {
@@ -667,7 +668,9 @@ impl TypeChecker {
                         Ok((left_ty, false))
                     }
                     ">" | "<" | ">=" | "<=" => {
-                        if left_ty == Type::Int && right_ty == Type::Int {
+                        if left_ty == Type::Int && right_ty == Type::Int
+                            || left_ty == Type::Float && right_ty == Type::Float
+                        {
                             Ok((Type::Bool, false))
                         } else {
                             Err(FlavorError::with_span(
@@ -679,8 +682,26 @@ impl TypeChecker {
                             ))
                         }
                     }
-                    "+" | "-" | "*" | "/" => {
-                        if left_ty == Type::Int && right_ty == Type::Int {
+                    "+" => {
+                        if left_ty == Type::Int && right_ty == Type::Int
+                            || left_ty == Type::Float && right_ty == Type::Float
+                            || left_ty == Type::String && right_ty == Type::String
+                        {
+                            Ok((Type::Int, false))
+                        } else {
+                            Err(FlavorError::with_span(
+                                ErrorPhase::TypeChecking,
+                                format!(
+                                    "Operator '{operator}' requires Integer operands but found left: {left_ty:?}, right: {right_ty:?}"
+                                ),
+                                *span,
+                            ))
+                        }
+                    }
+                    "-" | "*" | "/" => {
+                        if left_ty == Type::Int && right_ty == Type::Int
+                            || left_ty == Type::Float && right_ty == Type::Float
+                        {
                             Ok((Type::Int, false))
                         } else {
                             Err(FlavorError::with_span(
