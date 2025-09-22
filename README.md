@@ -87,6 +87,9 @@ This program prints `Result=-20, first element=2`: the even values are summed, d
 
 - `let name[: type] = expression;` declares a mutable binding. Omit the type when Flavor can infer it from the right-hand side.
 - Numbers are 64-bit integers; arithmetic uses `+ - * / %` and comparison operators `== != < <= > >=` return `bool` values.
+  - Support for floating-point numbers has been added in the latest version
+    with 64-bit floats.
+  - Strings can now be concatenated with `+`
 - Boolean logic uses `true`, `false`, `&&`, `||`, and `!`.
 - Functions require parameter and return types: `fn name(param: type) -> return_type { ... }`. Use `return value;` to exit a function early.
 - Anonymous functions are expressions: `<value: int> -> int { return value * 2; }` can be stored in variables or returned, enabling higher-order patterns.
